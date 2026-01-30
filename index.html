@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WeTrack - System Journal</title>
     <style>
+        /* =============================================
+           CSS Variables & Reset
+           ============================================= */
         :root {
             --theme-bg: #1a1a2e;
             --theme-text: #eee;
@@ -19,6 +22,9 @@
             box-sizing: border-box;
         }
 
+        /* =============================================
+           Base Layout & Typography
+           ============================================= */
         body {
             font-family: var(--theme-font);
             max-width: 900px;
@@ -64,7 +70,9 @@
             color: var(--theme-accent);
         }
 
-        /* Multiple choice */
+        /* =============================================
+           Question Components
+           ============================================= */
         .choices {
             display: flex;
             flex-wrap: wrap;
@@ -131,7 +139,9 @@
             color: var(--theme-accent);
         }
 
-        /* Text input */
+        /* =============================================
+           Form Elements
+           ============================================= */
         input[type="text"], input[type="number"] {
             width: 100%;
             padding: 12px;
@@ -239,7 +249,9 @@
         .md-heading.h2 { font-size: 1.3em; }
         .md-heading.h3 { font-size: 1.1em; }
 
-        /* Buttons */
+        /* =============================================
+           Buttons
+           ============================================= */
         .btn-primary {
             display: block;
             width: 100%;
@@ -465,7 +477,9 @@
             opacity: 0.6;
         }
 
-        /* Modal */
+        /* =============================================
+           Modals
+           ============================================= */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -502,7 +516,9 @@
             margin-top: 20px;
         }
 
-        /* Markdown content styling */
+        /* =============================================
+           Markdown Content Display
+           ============================================= */
         .markdown-content {
             line-height: 1.6;
         }
@@ -587,7 +603,9 @@
             margin: 2em 0;
         }
 
-        /* Theme Selection */
+        /* =============================================
+           Theme Selection UI
+           ============================================= */
         .theme-selection-container {
             display: flex;
             gap: 20px;
