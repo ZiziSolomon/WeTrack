@@ -1016,7 +1016,9 @@
     </div>
 
     <script>
-        // Storage keys
+        /* =============================================
+           Constants & Configuration
+           ============================================= */
         const STORAGE_KEYS = {
             ENTRIES: 'wetrack-entries',
             QUESTIONS: 'wetrack-questions'
@@ -1074,22 +1076,28 @@
             }
         ];
 
+        /* =============================================
+           State Variables
+           ============================================= */
         let questions = [];
         let currentAnswers = {};
         let editingQuestionId = null;
         let tempOptions = [];
 
-        // Theme system
+        // Theme state
         let currentThemes = [];
         let selectedThemeIndices = [];
         let themeHistory = [];
         let currentTheme = null;
         let lockedProperties = {};
 
-        // Confirmation system
+        // Confirmation state
         let skipConfirmsUntil = 0;
         let pendingConfirmAction = null;
 
+        /* =============================================
+           Confirmation Dialog
+           ============================================= */
         function showConfirm(message, onConfirm) {
             // Check if we're in "skip confirms" mode
             if (Date.now() < skipConfirmsUntil) {
@@ -1119,7 +1127,9 @@
             pendingConfirmAction = null;
         }
 
-        // Theme Generation and Selection
+        /* =============================================
+           Theme Generation & Selection
+           ============================================= */
         const fontFamilies = [
             'Georgia, serif',
             "'Courier New', monospace",
@@ -1454,7 +1464,9 @@
             document.getElementById('theme-instruction').textContent = 'Select one or more themes';
         }
 
-        // Load questions from storage or use defaults
+        /* =============================================
+           Questions & Answers
+           ============================================= */
         function loadQuestions() {
             const stored = localStorage.getItem(STORAGE_KEYS.QUESTIONS);
             if (stored) {
@@ -1698,6 +1710,9 @@
             }
         }
 
+        /* =============================================
+           Navigation & Views
+           ============================================= */
         function startNewEntry() {
             initThemeSelection();
             showView('theme');
@@ -1741,6 +1756,9 @@
             }
         }
 
+        /* =============================================
+           Entry History & Detail View
+           ============================================= */
         function renderHistory() {
             const entries = JSON.parse(localStorage.getItem(STORAGE_KEYS.ENTRIES) || '[]');
             const container = document.getElementById('entries-list');
@@ -1813,7 +1831,9 @@
             });
         }
 
-        // Questions Management
+        /* =============================================
+           Questions Editor UI
+           ============================================= */
         function renderQuestionsList() {
             const container = document.getElementById('questions-list');
 
@@ -1978,7 +1998,9 @@
             });
         }
 
-        // Export functions
+        /* =============================================
+           Export & Import
+           ============================================= */
         function exportEntriesJSON() {
             const entries = JSON.parse(localStorage.getItem(STORAGE_KEYS.ENTRIES) || '[]');
             downloadJSON(entries, 'wetrack-entries.json');
@@ -2104,7 +2126,9 @@
             reader.readAsText(file);
         }
 
-        // Load theme from last entry
+        /* =============================================
+           Initialization
+           ============================================= */
         function loadLastEntryTheme() {
             const entries = JSON.parse(localStorage.getItem(STORAGE_KEYS.ENTRIES) || '[]');
             if (entries.length > 0 && entries[0].theme) {
@@ -2112,7 +2136,7 @@
             }
         }
 
-        // Initialize
+        // Run on page load
         loadQuestions();
         renderQuestions();
         loadLastEntryTheme();
