@@ -1005,9 +1005,12 @@
     <script>
         // Storage keys
         const STORAGE_KEYS = {
-            ENTRIES: STORAGE_KEYS.ENTRIES,
-            QUESTIONS: STORAGE_KEYS.QUESTIONS
+            ENTRIES: 'wetrack-entries',
+            QUESTIONS: 'wetrack-questions'
         };
+
+        // Timing constants
+        const SKIP_CONFIRMS_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 
         // Default questions
         const defaultQuestions = [
@@ -1089,7 +1092,7 @@
 
         function proceedConfirm() {
             if (document.getElementById('skip-confirms-checkbox').checked) {
-                skipConfirmsUntil = Date.now() + (5 * 60 * 1000); // 5 minutes
+                skipConfirmsUntil = Date.now() + SKIP_CONFIRMS_DURATION_MS;
             }
             document.getElementById('confirm-modal').classList.add('hidden');
             if (pendingConfirmAction) {
