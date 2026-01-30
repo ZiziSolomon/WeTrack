@@ -1,0 +1,12 @@
+# Local tooling
+.claude/
+gh-installer.msi
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
