@@ -11,9 +11,9 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            max-width: 700px;
+            max-width: 900px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 12px;
             background: #1a1a2e;
             color: #eee;
             min-height: 100vh;
@@ -22,7 +22,8 @@
         h1 {
             text-align: center;
             color: #a78bfa;
-            margin-bottom: 30px;
+            margin-bottom: 12px;
+            font-size: 1.5rem;
         }
 
         h2 {
@@ -37,8 +38,8 @@
         .section {
             background: #16213e;
             border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 20px;
+            padding: 16px;
+            margin-bottom: 16px;
         }
 
         .question {
@@ -300,8 +301,8 @@
             display: flex;
             justify-content: center;
             flex-wrap: wrap;
-            gap: 12px;
-            margin-bottom: 20px;
+            gap: 8px;
+            margin-bottom: 12px;
         }
 
         /* Success message */
@@ -558,6 +559,111 @@
             border-top: 2px solid #374151;
             margin: 2em 0;
         }
+
+        /* Theme Selection */
+        .theme-selection-container {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 16px;
+        }
+
+        .theme-grid-wrapper {
+            flex: 1;
+        }
+
+        .theme-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+
+        .theme-card {
+            aspect-ratio: 1;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.15s;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .theme-card:hover {
+            transform: scale(1.03);
+        }
+
+        .theme-card.selected {
+            outline: 2px solid #7c3aed;
+            outline-offset: 2px;
+        }
+
+        .theme-card.selected::after {
+            content: '✓';
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: #7c3aed;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+
+        .theme-sample-text {
+            font-size: 0.75rem;
+            margin-bottom: 6px;
+        }
+
+        .theme-sample-accent {
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-size: 0.65rem;
+            width: fit-content;
+        }
+
+        .locks-sidebar {
+            width: 180px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .locks-sidebar h3 {
+            margin: 0 0 12px 0;
+            font-size: 1rem;
+        }
+
+        .property-btn {
+            padding: 8px 12px;
+            border: 2px solid #4c1d95;
+            background: transparent;
+            color: #a78bfa;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+            text-align: center;
+            width: 100%;
+        }
+
+        .property-btn:hover {
+            background: #4c1d95;
+        }
+
+        .property-btn.locked {
+            background: #7c3aed;
+            border-color: #7c3aed;
+            color: white;
+        }
+
+        .property-btn.locked::before {
+            content: '🔒 ';
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
@@ -576,6 +682,32 @@
         <div class="section" style="text-align: center; padding: 60px 24px;">
             <h2 style="font-size: 1.5rem; margin-bottom: 40px;">Welcome to WeTrack</h2>
             <button class="btn-primary" onclick="startNewEntry()" style="max-width: 300px; margin: 0 auto;">Start an Entry</button>
+        </div>
+    </div>
+
+    <!-- Theme Selection View -->
+    <div id="theme-view" class="hidden">
+        <div class="section">
+            <h2 style="margin-bottom: 8px;">Choose Your Theme</h2>
+            <p style="color: #9ca3af; margin-bottom: 16px; font-size: 0.9rem;">
+                <span id="theme-instruction">Select one or more themes</span>
+            </p>
+
+            <div class="theme-selection-container">
+                <div class="theme-grid-wrapper">
+                    <div id="theme-grid" class="theme-grid"></div>
+                </div>
+
+                <div id="locked-properties" class="locks-sidebar" style="display: none;">
+                    <h3>Lock Properties</h3>
+                    <div id="property-locks"></div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 16px;">
+                <button class="btn-secondary" onclick="goBackThemes()" id="back-themes-btn" style="display: none;">← Back</button>
+                <button class="btn-primary" onclick="confirmThemeSelection()">Continue</button>
+            </div>
         </div>
     </div>
 
@@ -807,6 +939,13 @@
         let editingQuestionId = null;
         let tempOptions = [];
 
+        // Theme system
+        let currentThemes = [];
+        let selectedThemeIndices = [];
+        let themeHistory = [];
+        let currentTheme = null;
+        let lockedProperties = {};
+
         // Confirmation system
         let skipConfirmsUntil = 0;
         let pendingConfirmAction = null;
@@ -838,6 +977,253 @@
         function cancelConfirm() {
             document.getElementById('confirm-modal').classList.add('hidden');
             pendingConfirmAction = null;
+        }
+
+        // Theme Generation and Selection
+        const fontFamilies = [
+            'Georgia, serif',
+            '"Courier New", monospace',
+            '"Arial", sans-serif',
+            '"Verdana", sans-serif',
+            '"Times New Roman", serif',
+            '"Comic Sans MS", cursive',
+            'system-ui, sans-serif',
+            '"Trebuchet MS", sans-serif'
+        ];
+
+        function generateInitialThemes() {
+            const themes = [];
+            for (let i = 0; i < 16; i++) {
+                themes.push(generateRandomTheme());
+            }
+            return themes;
+        }
+
+        function generateRandomTheme() {
+            const hue = Math.random() * 360;
+            const saturation = 20 + Math.random() * 40;
+            const lightness = 15 + Math.random() * 10;
+
+            return {
+                bgColor: `hsl(${hue}, ${saturation}%, ${lightness}%)`,
+                textColor: `hsl(${hue}, ${saturation * 0.3}%, ${70 + Math.random() * 20}%)`,
+                accentColor: `hsl(${(hue + 30 + Math.random() * 60) % 360}, ${50 + Math.random() * 30}%, ${50 + Math.random() * 20}%)`,
+                borderRadius: Math.floor(Math.random() * 20) + 'px',
+                padding: Math.floor(8 + Math.random() * 16) + 'px',
+                font: fontFamilies[Math.floor(Math.random() * fontFamilies.length)]
+            };
+        }
+
+        function generateChildThemes(parentThemes) {
+            const themes = [];
+            for (let i = 0; i < 16; i++) {
+                // Blend random pairs of parent themes
+                const parent1 = parentThemes[Math.floor(Math.random() * parentThemes.length)];
+                const parent2 = parentThemes[Math.floor(Math.random() * parentThemes.length)];
+                const blended = blendThemes(parent1, parent2);
+
+                // Apply locked properties
+                Object.keys(lockedProperties).forEach(key => {
+                    blended[key] = lockedProperties[key];
+                });
+
+                themes.push(blended);
+            }
+            return themes;
+        }
+
+        function blendThemes(theme1, theme2) {
+            // Parse HSL values
+            const parseHSL = (hslStr) => {
+                const match = hslStr.match(/hsl\(([^,]+),\s*([^,]+)%,\s*([^)]+)%\)/);
+                return match ? [parseFloat(match[1]), parseFloat(match[2]), parseFloat(match[3])] : [0, 0, 0];
+            };
+
+            const [h1, s1, l1] = parseHSL(theme1.bgColor);
+            const [h2, s2, l2] = parseHSL(theme2.bgColor);
+            const [th1, ts1, tl1] = parseHSL(theme1.textColor);
+            const [th2, ts2, tl2] = parseHSL(theme2.textColor);
+            const [ah1, as1, al1] = parseHSL(theme1.accentColor);
+            const [ah2, as2, al2] = parseHSL(theme2.accentColor);
+
+            // More varied blending with random ratios instead of 50/50
+            const ratio = 0.2 + Math.random() * 0.6; // Random ratio between 0.2 and 0.8
+            const blend = (a, b, variation) => {
+                // 20% chance to completely randomize this property
+                if (Math.random() < 0.2) {
+                    return a + (Math.random() - 0.5) * variation * 2;
+                }
+                return a * ratio + b * (1 - ratio) + (Math.random() - 0.5) * variation;
+            };
+
+            return {
+                bgColor: `hsl(${blend(h1, h2, 60)}, ${blend(s1, s2, 40)}%, ${blend(l1, l2, 15)}%)`,
+                textColor: `hsl(${blend(th1, th2, 60)}, ${blend(ts1, ts2, 40)}%, ${blend(tl1, tl2, 20)}%)`,
+                accentColor: `hsl(${blend(ah1, ah2, 80)}, ${blend(as1, as2, 50)}%, ${blend(al1, al2, 30)}%)`,
+                borderRadius: Math.max(0, Math.floor(blend(parseInt(theme1.borderRadius), parseInt(theme2.borderRadius), 15))) + 'px',
+                padding: Math.max(8, Math.floor(blend(parseInt(theme1.padding), parseInt(theme2.padding), 12))) + 'px',
+                font: Math.random() < 0.7 ? (Math.random() > 0.5 ? theme1.font : theme2.font) : fontFamilies[Math.floor(Math.random() * fontFamilies.length)]
+            };
+        }
+
+        function renderThemeGrid() {
+            const container = document.getElementById('theme-grid');
+            container.innerHTML = '';
+
+            currentThemes.forEach((theme, index) => {
+                const card = document.createElement('div');
+                card.className = 'theme-card';
+                if (selectedThemeIndices.includes(index)) {
+                    card.classList.add('selected');
+                }
+
+                card.style.backgroundColor = theme.bgColor;
+                card.style.color = theme.textColor;
+                card.style.borderRadius = theme.borderRadius;
+                card.style.padding = theme.padding;
+                card.style.fontFamily = theme.font;
+
+                card.innerHTML = `
+                    <div class="theme-sample-text">The quick brown fox</div>
+                    <div class="theme-sample-accent" style="background: ${theme.accentColor}; color: ${theme.bgColor};">
+                        Accent
+                    </div>
+                `;
+
+                card.onclick = () => toggleThemeSelection(index);
+                container.appendChild(card);
+            });
+        }
+
+        function toggleThemeSelection(index) {
+            const pos = selectedThemeIndices.indexOf(index);
+            if (pos > -1) {
+                selectedThemeIndices.splice(pos, 1);
+            } else {
+                selectedThemeIndices.push(index);
+            }
+            renderThemeGrid();
+            renderPropertyLocks();
+        }
+
+        function renderPropertyLocks() {
+            const container = document.getElementById('property-locks');
+            const section = document.getElementById('locked-properties');
+
+            if (selectedThemeIndices.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+
+            section.style.display = 'flex';
+            container.innerHTML = '';
+
+            const selectedThemes = selectedThemeIndices.map(i => currentThemes[i]);
+            const firstTheme = selectedThemes[0];
+
+            const properties = [
+                { key: 'bgColor', label: 'Background' },
+                { key: 'textColor', label: 'Text' },
+                { key: 'accentColor', label: 'Accent' },
+                { key: 'font', label: 'Font' },
+                { key: 'borderRadius', label: 'Corners' },
+                { key: 'padding', label: 'Spacing' }
+            ];
+
+            properties.forEach(prop => {
+                const btn = document.createElement('button');
+                btn.className = 'property-btn';
+                if (lockedProperties[prop.key] !== undefined) {
+                    btn.classList.add('locked');
+                }
+
+                btn.textContent = prop.label;
+                btn.onclick = () => togglePropertyLock(prop.key, firstTheme[prop.key]);
+                container.appendChild(btn);
+            });
+        }
+
+        function togglePropertyLock(key, value) {
+            if (lockedProperties[key] !== undefined) {
+                delete lockedProperties[key];
+            } else {
+                lockedProperties[key] = value;
+            }
+            renderPropertyLocks();
+        }
+
+        function confirmThemeSelection() {
+            if (selectedThemeIndices.length === 0) {
+                alert('Please select at least one theme');
+                return;
+            }
+
+            if (selectedThemeIndices.length === 1) {
+                // Single theme selected - apply and move to questions
+                currentTheme = currentThemes[selectedThemeIndices[0]];
+                applyTheme(currentTheme);
+                renderQuestions();
+                backToQuestions();
+                showView('entry');
+            } else {
+                // Multiple themes - generate children
+                const selectedThemes = selectedThemeIndices.map(i => currentThemes[i]);
+                themeHistory.push({ themes: currentThemes, selected: selectedThemeIndices });
+                currentThemes = generateChildThemes(selectedThemes);
+                selectedThemeIndices = [];
+
+                // Apply first selected theme
+                currentTheme = selectedThemes[0];
+                applyTheme(currentTheme);
+
+                renderThemeGrid();
+                document.getElementById('back-themes-btn').style.display = 'inline-block';
+                document.getElementById('theme-instruction').textContent = 'Refine your selection - pick themes you like';
+            }
+        }
+
+        function goBackThemes() {
+            if (themeHistory.length === 0) return;
+
+            const previous = themeHistory.pop();
+            currentThemes = previous.themes;
+            selectedThemeIndices = previous.selected;
+            renderThemeGrid();
+
+            if (themeHistory.length === 0) {
+                document.getElementById('back-themes-btn').style.display = 'none';
+                document.getElementById('theme-instruction').textContent = 'Select one or more themes that resonate with you';
+            }
+        }
+
+        function applyTheme(theme) {
+            const root = document.documentElement;
+            root.style.setProperty('--theme-bg', theme.bgColor);
+            root.style.setProperty('--theme-text', theme.textColor);
+            root.style.setProperty('--theme-accent', theme.accentColor);
+            root.style.setProperty('--theme-border-radius', theme.borderRadius);
+            root.style.setProperty('--theme-padding', theme.padding);
+            root.style.setProperty('--theme-font', theme.font);
+
+            // Apply to body sections
+            document.body.style.fontFamily = theme.font;
+            document.querySelectorAll('.section').forEach(section => {
+                section.style.backgroundColor = theme.bgColor;
+                section.style.color = theme.textColor;
+                section.style.borderRadius = theme.borderRadius;
+            });
+        }
+
+        function initThemeSelection() {
+            currentThemes = generateInitialThemes();
+            selectedThemeIndices = [];
+            themeHistory = [];
+            currentTheme = null;
+            lockedProperties = {};
+            renderThemeGrid();
+            document.getElementById('back-themes-btn').style.display = 'none';
+            document.getElementById('locked-properties').style.display = 'none';
+            document.getElementById('theme-instruction').textContent = 'Select one or more themes that resonate with you';
         }
 
         // Load questions from storage or use defaults
@@ -943,7 +1329,8 @@
                 id: Date.now(),
                 timestamp: new Date().toISOString(),
                 answers: { ...currentAnswers },
-                journal: journalText
+                journal: journalText,
+                theme: currentTheme
             };
 
             const entries = JSON.parse(localStorage.getItem('wetrack-entries') || '[]');
@@ -1076,9 +1463,8 @@
         }
 
         function startNewEntry() {
-            renderQuestions();
-            backToQuestions();
-            showView('entry');
+            initThemeSelection();
+            showView('theme');
         }
 
         function goToJournal() {
@@ -1093,6 +1479,7 @@
 
         function showView(view) {
             document.getElementById('landing-view').classList.add('hidden');
+            document.getElementById('theme-view').classList.add('hidden');
             document.getElementById('entry-view').classList.add('hidden');
             document.getElementById('history-view').classList.add('hidden');
             document.getElementById('detail-view').classList.add('hidden');
@@ -1101,6 +1488,8 @@
 
             if (view === 'landing') {
                 document.getElementById('landing-view').classList.remove('hidden');
+            } else if (view === 'theme') {
+                document.getElementById('theme-view').classList.remove('hidden');
             } else if (view === 'entry') {
                 document.getElementById('entry-view').classList.remove('hidden');
             } else if (view === 'history') {
@@ -1146,6 +1535,11 @@
             const entry = entries.find(e => e.id === id);
 
             if (!entry) return;
+
+            // Apply entry's theme if it has one
+            if (entry.theme) {
+                applyTheme(entry.theme);
+            }
 
             const date = new Date(entry.timestamp);
             const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
