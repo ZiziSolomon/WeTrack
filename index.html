@@ -1,0 +1,1482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WeTrack - System Journal</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a2e;
+            color: #eee;
+            min-height: 100vh;
+        }
+
+        h1 {
+            text-align: center;
+            color: #a78bfa;
+            margin-bottom: 30px;
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #c4b5fd;
+        }
+
+        h3 {
+            color: #c4b5fd;
+        }
+
+        .section {
+            background: #16213e;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .question {
+            margin-bottom: 24px;
+        }
+
+        .question-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #c4b5fd;
+        }
+
+        /* Multiple choice */
+        .choices {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .choice-btn {
+            padding: 10px 18px;
+            border: 2px solid #4c1d95;
+            background: transparent;
+            color: #eee;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .choice-btn:hover {
+            background: #4c1d95;
+        }
+
+        .choice-btn.selected {
+            background: #7c3aed;
+            border-color: #7c3aed;
+        }
+
+        /* Scale */
+        .scale-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .scale-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: #9ca3af;
+            margin-top: 6px;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            height: 8px;
+            -webkit-appearance: none;
+            background: #374151;
+            border-radius: 4px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            background: #7c3aed;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .scale-value {
+            min-width: 36px;
+            text-align: center;
+            font-weight: 600;
+            color: #a78bfa;
+        }
+
+        /* Text input */
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #374151;
+            background: #0f172a;
+            color: #eee;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        input[type="text"]:focus, input[type="number"]:focus {
+            outline: none;
+            border-color: #7c3aed;
+        }
+
+        /* Select */
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #374151;
+            background: #0f172a;
+            color: #eee;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #7c3aed;
+        }
+
+        /* Journal */
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 16px;
+            border: 2px solid #374151;
+            background: #0f172a;
+            color: #eee;
+            border-radius: 8px;
+            font-size: 1rem;
+            resize: vertical;
+            line-height: 1.6;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #7c3aed;
+        }
+
+        /* Markdown Editor */
+        .markdown-editor {
+            width: 100%;
+            min-height: 200px;
+            padding: 16px;
+            border: 2px solid #374151;
+            background: #0f172a;
+            color: #eee;
+            border-radius: 8px;
+            font-size: 1rem;
+            line-height: 1.6;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .markdown-editor:focus {
+            outline: none;
+            border-color: #7c3aed;
+        }
+
+        .markdown-editor:empty:before {
+            content: attr(data-placeholder);
+            color: #6b7280;
+        }
+
+        /* Markdown syntax styling */
+        .md-syntax {
+            color: #6b7280;
+            opacity: 0.5;
+        }
+
+        .md-bold {
+            font-weight: 600;
+            color: #e0e7ff;
+        }
+
+        .md-italic {
+            font-style: italic;
+            color: #d1d5db;
+        }
+
+        .md-code {
+            background: #1e293b;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .md-heading {
+            font-weight: 600;
+            color: #c4b5fd;
+        }
+
+        .md-heading.h1 { font-size: 1.5em; }
+        .md-heading.h2 { font-size: 1.3em; }
+        .md-heading.h3 { font-size: 1.1em; }
+
+        /* Buttons */
+        .btn-primary {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            background: #7c3aed;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-primary:hover {
+            background: #6d28d9;
+        }
+
+        .btn-secondary {
+            display: inline-block;
+            padding: 10px 20px;
+            background: transparent;
+            color: #a78bfa;
+            border: 2px solid #4c1d95;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background: #4c1d95;
+        }
+
+        .btn-danger {
+            display: inline-block;
+            padding: 8px 16px;
+            background: transparent;
+            color: #f87171;
+            border: 2px solid #991b1b;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-danger:hover {
+            background: #991b1b;
+        }
+
+        .btn-small {
+            display: inline-block;
+            padding: 8px 16px;
+            background: transparent;
+            color: #a78bfa;
+            border: 2px solid #4c1d95;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-small:hover {
+            background: #4c1d95;
+        }
+
+        /* Navigation */
+        .nav {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        /* Success message */
+        .success {
+            background: #065f46;
+            color: #a7f3d0;
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        /* Entry list */
+        .entry-item {
+            background: #0f172a;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            border-left: 4px solid #7c3aed;
+        }
+
+        .entry-date {
+            font-size: 0.85rem;
+            color: #9ca3af;
+            margin-bottom: 8px;
+        }
+
+        .entry-preview {
+            color: #d1d5db;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .entry-answers {
+            font-size: 0.9rem;
+            color: #a78bfa;
+            margin-top: 8px;
+        }
+
+        /* Question editor */
+        .question-card {
+            background: #0f172a;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            border-left: 4px solid #7c3aed;
+        }
+
+        .question-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .question-card-title {
+            font-weight: 600;
+            color: #c4b5fd;
+            flex: 1;
+        }
+
+        .question-card-type {
+            font-size: 0.8rem;
+            color: #9ca3af;
+            background: #374151;
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-left: 12px;
+        }
+
+        .question-card-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #c4b5fd;
+            font-weight: 500;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .form-row > * {
+            flex: 1;
+        }
+
+        .options-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .option-tag {
+            background: #374151;
+            padding: 6px 12px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .option-remove {
+            cursor: pointer;
+            color: #f87171;
+            font-weight: bold;
+        }
+
+        .add-option-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .add-option-row input {
+            flex: 1;
+        }
+
+        /* Export section */
+        .export-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal {
+            background: #16213e;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal h2 {
+            margin-top: 0;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        /* Markdown content styling */
+        .markdown-content {
+            line-height: 1.6;
+        }
+
+        .markdown-content h1,
+        .markdown-content h2,
+        .markdown-content h3 {
+            color: #c4b5fd;
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+        }
+
+        .markdown-content h1 { font-size: 1.5em; }
+        .markdown-content h2 { font-size: 1.3em; }
+        .markdown-content h3 { font-size: 1.1em; }
+
+        .markdown-content p {
+            margin-bottom: 1em;
+        }
+
+        .markdown-content ul,
+        .markdown-content ol {
+            margin-bottom: 1em;
+            padding-left: 2em;
+        }
+
+        .markdown-content li {
+            margin-bottom: 0.5em;
+        }
+
+        .markdown-content code {
+            background: #0f172a;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .markdown-content pre {
+            background: #0f172a;
+            padding: 12px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 1em;
+        }
+
+        .markdown-content pre code {
+            padding: 0;
+            background: none;
+        }
+
+        .markdown-content blockquote {
+            border-left: 4px solid #7c3aed;
+            padding-left: 16px;
+            margin: 1em 0;
+            color: #9ca3af;
+            font-style: italic;
+        }
+
+        .markdown-content a {
+            color: #a78bfa;
+            text-decoration: underline;
+        }
+
+        .markdown-content strong {
+            font-weight: 600;
+            color: #e0e7ff;
+        }
+
+        .markdown-content em {
+            font-style: italic;
+            color: #d1d5db;
+        }
+
+        .markdown-content hr {
+            border: none;
+            border-top: 2px solid #374151;
+            margin: 2em 0;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <h1>WeTrack</h1>
+
+    <nav class="nav">
+        <button class="btn-secondary" onclick="showView('landing')">Home</button>
+        <button class="btn-secondary" onclick="showView('history')">View History</button>
+        <button class="btn-secondary" onclick="showView('questions')">Edit Questions</button>
+        <button class="btn-secondary" onclick="showView('export')">Export Data</button>
+    </nav>
+
+    <!-- Landing Page -->
+    <div id="landing-view">
+        <div class="section" style="text-align: center; padding: 60px 24px;">
+            <h2 style="font-size: 1.5rem; margin-bottom: 40px;">Welcome to WeTrack</h2>
+            <button class="btn-primary" onclick="startNewEntry()" style="max-width: 300px; margin: 0 auto;">Start an Entry</button>
+        </div>
+    </div>
+
+    <!-- Entry View -->
+    <div id="entry-view" class="hidden">
+        <!-- Step 1: Questions -->
+        <div id="questions-step">
+            <div class="section">
+                <h2>Check-In Questions</h2>
+                <div id="questions-container"></div>
+            </div>
+            <button class="btn-primary" onclick="goToJournal()">Continue to Journal</button>
+        </div>
+
+        <!-- Step 2: Journal -->
+        <div id="journal-step" class="hidden">
+            <div class="section">
+                <h2 style="margin-bottom: 16px;">Journal Entry</h2>
+                <div id="journal-text"
+                     class="markdown-editor"
+                     contenteditable="true"
+                     data-placeholder="Write your thoughts here... (Markdown supported)"
+                     oninput="handleMarkdownInput()"
+                     onpaste="handlePaste(event)"></div>
+            </div>
+            <div style="display: flex; gap: 12px;">
+                <button class="btn-secondary" onclick="backToQuestions()">← Back to Questions</button>
+                <button class="btn-primary" onclick="saveEntry()" style="flex: 1;">Save Entry</button>
+            </div>
+            <div id="success-message" class="success hidden">Entry saved successfully!</div>
+        </div>
+    </div>
+
+    <!-- History View -->
+    <div id="history-view" class="hidden">
+        <div class="section">
+            <h2>Past Entries</h2>
+            <div id="entries-list"></div>
+        </div>
+    </div>
+
+    <!-- Entry Detail View -->
+    <div id="detail-view" class="hidden">
+        <div class="section">
+            <button class="btn-secondary" onclick="showView('history')" style="margin-bottom: 16px;">&larr; Back</button>
+            <div id="entry-detail"></div>
+        </div>
+    </div>
+
+    <!-- Questions Editor View -->
+    <div id="questions-view" class="hidden">
+        <div class="section">
+            <h2>Manage Questions</h2>
+            <p style="color: #9ca3af; margin-bottom: 20px;">Customize the check-in questions asked before each journal entry.</p>
+            <div id="questions-list"></div>
+            <button class="btn-primary" onclick="openAddQuestionModal()" style="margin-top: 16px;">+ Add New Question</button>
+        </div>
+    </div>
+
+    <!-- Export View -->
+    <div id="export-view" class="hidden">
+        <div class="section">
+            <h2>Export Your Data</h2>
+            <p style="color: #9ca3af; margin-bottom: 20px;">Download your entries and question configuration.</p>
+
+            <h3>Export Entries</h3>
+            <div class="export-buttons" style="margin-bottom: 24px;">
+                <button class="btn-secondary" onclick="exportEntriesJSON()">Export as JSON</button>
+                <button class="btn-secondary" onclick="exportEntriesCSV()">Export as CSV</button>
+            </div>
+
+            <h3>Export Questions</h3>
+            <div class="export-buttons" style="margin-bottom: 24px;">
+                <button class="btn-secondary" onclick="exportQuestionsJSON()">Export Questions (JSON)</button>
+            </div>
+
+            <h3>Import Data</h3>
+            <div class="form-group">
+                <label>Import Entries (JSON)</label>
+                <input type="file" id="import-entries-file" accept=".json" onchange="importEntriesJSON(event)">
+            </div>
+            <div class="form-group">
+                <label>Import Questions (JSON)</label>
+                <input type="file" id="import-questions-file" accept=".json" onchange="importQuestionsJSON(event)">
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Question Modal -->
+    <div id="question-modal" class="modal-overlay hidden">
+        <div class="modal">
+            <h2 id="modal-title">Add Question</h2>
+
+            <div class="form-group">
+                <label>Question Text</label>
+                <input type="text" id="q-text" placeholder="Enter your question...">
+            </div>
+
+            <div class="form-group">
+                <label>Question Type</label>
+                <select id="q-type" onchange="updateTypeOptions()">
+                    <option value="text">Text Input</option>
+                    <option value="scale">Number Scale</option>
+                    <option value="choice">Multiple Choice</option>
+                </select>
+            </div>
+
+            <!-- Scale options -->
+            <div id="scale-options" class="hidden">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Min Value</label>
+                        <input type="number" id="q-min" value="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Max Value</label>
+                        <input type="number" id="q-max" value="10">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Min Label</label>
+                        <input type="text" id="q-min-label" placeholder="e.g., Very low">
+                    </div>
+                    <div class="form-group">
+                        <label>Max Label</label>
+                        <input type="text" id="q-max-label" placeholder="e.g., Very high">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Choice options -->
+            <div id="choice-options" class="hidden">
+                <div class="form-group">
+                    <label>Options</label>
+                    <div id="options-container" class="options-list"></div>
+                    <div class="add-option-row">
+                        <input type="text" id="new-option" placeholder="Add an option...">
+                        <button class="btn-small" onclick="addOption()">Add</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Text options -->
+            <div id="text-options">
+                <div class="form-group">
+                    <label>Placeholder Text</label>
+                    <input type="text" id="q-placeholder" placeholder="Optional placeholder...">
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closeQuestionModal()">Cancel</button>
+                <button class="btn-primary" onclick="saveQuestion()" style="width: auto; padding: 12px 24px;">Save Question</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Delete Modal -->
+    <div id="confirm-modal" class="modal-overlay hidden">
+        <div class="modal" style="max-width: 400px;">
+            <h2>Confirm Delete</h2>
+            <p id="confirm-message">Are you sure you want to delete this?</p>
+            <div class="form-group" style="margin-top: 16px;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="checkbox" id="skip-confirms-checkbox" style="width: auto;">
+                    <span>Don't ask again for 5 minutes</span>
+                </label>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="cancelConfirm()">Cancel</button>
+                <button class="btn-danger" onclick="proceedConfirm()" style="padding: 12px 24px;">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Default questions
+        const defaultQuestions = [
+            {
+                id: 'energy',
+                text: 'How is your energy level right now?',
+                type: 'scale',
+                min: 1,
+                max: 10,
+                minLabel: 'Very low',
+                maxLabel: 'Very high'
+            },
+            {
+                id: 'mood',
+                text: 'How would you describe your current mood?',
+                type: 'choice',
+                options: ['Calm', 'Anxious', 'Happy', 'Sad', 'Angry', 'Numb', 'Mixed']
+            },
+            {
+                id: 'clarity',
+                text: 'How clear does your thinking feel?',
+                type: 'scale',
+                min: 1,
+                max: 10,
+                minLabel: 'Foggy',
+                maxLabel: 'Crystal clear'
+            },
+            {
+                id: 'name',
+                text: 'What name feels right to go by today?',
+                type: 'text',
+                placeholder: 'Enter a name or leave blank'
+            },
+            {
+                id: 'age',
+                text: 'If you had to pick an age that feels right, what would it be?',
+                type: 'text',
+                placeholder: 'A number, range, or description'
+            },
+            {
+                id: 'front',
+                text: 'How present/fronting do you feel?',
+                type: 'scale',
+                min: 1,
+                max: 10,
+                minLabel: 'Barely here',
+                maxLabel: 'Fully present'
+            }
+        ];
+
+        let questions = [];
+        let currentAnswers = {};
+        let editingQuestionId = null;
+        let tempOptions = [];
+
+        // Confirmation system
+        let skipConfirmsUntil = 0;
+        let pendingConfirmAction = null;
+
+        function showConfirm(message, onConfirm) {
+            // Check if we're in "skip confirms" mode
+            if (Date.now() < skipConfirmsUntil) {
+                onConfirm();
+                return;
+            }
+
+            pendingConfirmAction = onConfirm;
+            document.getElementById('confirm-message').textContent = message;
+            document.getElementById('skip-confirms-checkbox').checked = false;
+            document.getElementById('confirm-modal').classList.remove('hidden');
+        }
+
+        function proceedConfirm() {
+            if (document.getElementById('skip-confirms-checkbox').checked) {
+                skipConfirmsUntil = Date.now() + (5 * 60 * 1000); // 5 minutes
+            }
+            document.getElementById('confirm-modal').classList.add('hidden');
+            if (pendingConfirmAction) {
+                pendingConfirmAction();
+                pendingConfirmAction = null;
+            }
+        }
+
+        function cancelConfirm() {
+            document.getElementById('confirm-modal').classList.add('hidden');
+            pendingConfirmAction = null;
+        }
+
+        // Load questions from storage or use defaults
+        function loadQuestions() {
+            const stored = localStorage.getItem('wetrack-questions');
+            if (stored) {
+                questions = JSON.parse(stored);
+            } else {
+                questions = [...defaultQuestions];
+                saveQuestions();
+            }
+        }
+
+        function saveQuestions() {
+            localStorage.setItem('wetrack-questions', JSON.stringify(questions));
+        }
+
+        // Generate unique ID
+        function generateId() {
+            return 'q_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        // Initialize questions display
+        function renderQuestions() {
+            const container = document.getElementById('questions-container');
+            container.innerHTML = '';
+            currentAnswers = {};
+
+            if (questions.length === 0) {
+                container.innerHTML = '<p style="color: #9ca3af;">No questions configured. Go to Edit Questions to add some.</p>';
+                return;
+            }
+
+            questions.forEach(q => {
+                const div = document.createElement('div');
+                div.className = 'question';
+
+                let inputHtml = '';
+
+                if (q.type === 'choice') {
+                    inputHtml = `<div class="choices">
+                        ${(q.options || []).map(opt =>
+                            `<button class="choice-btn" data-question="${q.id}" data-value="${opt}" onclick="selectChoice(this)">${opt}</button>`
+                        ).join('')}
+                    </div>`;
+                } else if (q.type === 'scale') {
+                    const min = q.min || 1;
+                    const max = q.max || 10;
+                    const midValue = Math.floor((max - min) / 2) + min;
+                    currentAnswers[q.id] = midValue;
+                    inputHtml = `
+                        <div class="scale-container">
+                            <input type="range" min="${min}" max="${max}" value="${midValue}"
+                                   data-question="${q.id}" onchange="updateScale(this)">
+                            <span class="scale-value" id="scale-${q.id}">${midValue}</span>
+                        </div>
+                        <div class="scale-labels">
+                            <span>${q.minLabel || min}</span>
+                            <span>${q.maxLabel || max}</span>
+                        </div>`;
+                } else if (q.type === 'text') {
+                    inputHtml = `<input type="text" data-question="${q.id}"
+                                       placeholder="${q.placeholder || ''}"
+                                       onchange="updateText(this)">`;
+                }
+
+                div.innerHTML = `
+                    <label class="question-label">${q.text}</label>
+                    ${inputHtml}
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function selectChoice(btn) {
+            const questionId = btn.dataset.question;
+            const value = btn.dataset.value;
+
+            document.querySelectorAll(`[data-question="${questionId}"]`).forEach(b => {
+                b.classList.remove('selected');
+            });
+
+            btn.classList.add('selected');
+            currentAnswers[questionId] = value;
+        }
+
+        function updateScale(input) {
+            const questionId = input.dataset.question;
+            currentAnswers[questionId] = parseInt(input.value);
+            document.getElementById(`scale-${questionId}`).textContent = input.value;
+        }
+
+        function updateText(input) {
+            const questionId = input.dataset.question;
+            currentAnswers[questionId] = input.value;
+        }
+
+        function saveEntry() {
+            const editor = document.getElementById('journal-text');
+            const journalText = getPlainTextFromEditor(editor);
+
+            const entry = {
+                id: Date.now(),
+                timestamp: new Date().toISOString(),
+                answers: { ...currentAnswers },
+                journal: journalText
+            };
+
+            const entries = JSON.parse(localStorage.getItem('wetrack-entries') || '[]');
+            entries.unshift(entry);
+            localStorage.setItem('wetrack-entries', JSON.stringify(entries));
+
+            const msg = document.getElementById('success-message');
+            msg.classList.remove('hidden');
+            setTimeout(() => {
+                msg.classList.add('hidden');
+                showView('landing');
+            }, 2000);
+
+            renderQuestions();
+            editor.innerHTML = '';
+        }
+
+        function getPlainTextFromEditor(editor) {
+            // Extract plain text with markdown from the contenteditable div
+            return editor.innerText || '';
+        }
+
+        function handlePaste(event) {
+            event.preventDefault();
+            const text = event.clipboardData.getData('text/plain');
+            document.execCommand('insertText', false, text);
+        }
+
+        function handleMarkdownInput() {
+            const editor = document.getElementById('journal-text');
+            const selection = window.getSelection();
+
+            // Save cursor position
+            let cursorPos = 0;
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                const preCaretRange = range.cloneRange();
+                preCaretRange.selectNodeContents(editor);
+                preCaretRange.setEnd(range.endContainer, range.endOffset);
+                cursorPos = preCaretRange.toString().length;
+            }
+
+            // Get plain text content
+            const text = editor.innerText || '';
+
+            // Render markdown with styled syntax
+            const html = renderMarkdownWithSyntax(text);
+            editor.innerHTML = html;
+
+            // Restore cursor position
+            restoreCursor(editor, cursorPos);
+        }
+
+        function renderMarkdownWithSyntax(text) {
+            if (!text) return '';
+
+            let html = text;
+
+            // Escape HTML
+            html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+            // Bold: **text** or __text__
+            html = html.replace(/(\*\*|__)((?:(?!\1).)+)\1/g,
+                '<span class="md-syntax">$1</span><span class="md-bold">$2</span><span class="md-syntax">$1</span>');
+
+            // Italic: *text* or _text_ (but not ** or __)
+            html = html.replace(/(?<!\*)\*(?!\*)([^*]+)\*(?!\*)/g,
+                '<span class="md-syntax">*</span><span class="md-italic">$1</span><span class="md-syntax">*</span>');
+            html = html.replace(/(?<!_)_(?!_)([^_]+)_(?!_)/g,
+                '<span class="md-syntax">_</span><span class="md-italic">$1</span><span class="md-syntax">_</span>');
+
+            // Inline code: `text`
+            html = html.replace(/`([^`]+)`/g,
+                '<span class="md-syntax">`</span><span class="md-code">$1</span><span class="md-syntax">`</span>');
+
+            // Headings at start of line
+            html = html.replace(/^(#{1,3})\s+(.+)$/gm,
+                (match, hashes, content) => {
+                    const level = hashes.length;
+                    return `<span class="md-syntax">${hashes} </span><span class="md-heading h${level}">${content}</span>`;
+                });
+
+            // Convert newlines to <br> tags
+            html = html.replace(/\n/g, '<br>');
+
+            return html;
+        }
+
+        function restoreCursor(element, position) {
+            const selection = window.getSelection();
+            const range = document.createRange();
+
+            let currentPos = 0;
+            let found = false;
+
+            function searchNode(node) {
+                if (found) return;
+
+                if (node.nodeType === Node.TEXT_NODE) {
+                    const nodeLength = node.textContent.length;
+                    if (currentPos + nodeLength >= position) {
+                        range.setStart(node, position - currentPos);
+                        range.collapse(true);
+                        found = true;
+                        return;
+                    }
+                    currentPos += nodeLength;
+                } else if (node.nodeName === 'BR') {
+                    currentPos += 1;
+                    if (currentPos >= position) {
+                        range.setStartAfter(node);
+                        range.collapse(true);
+                        found = true;
+                        return;
+                    }
+                } else {
+                    for (let i = 0; i < node.childNodes.length; i++) {
+                        searchNode(node.childNodes[i]);
+                        if (found) return;
+                    }
+                }
+            }
+
+            searchNode(element);
+
+            if (found) {
+                selection.removeAllRanges();
+                selection.addRange(range);
+            }
+        }
+
+        function startNewEntry() {
+            renderQuestions();
+            backToQuestions();
+            showView('entry');
+        }
+
+        function goToJournal() {
+            document.getElementById('questions-step').classList.add('hidden');
+            document.getElementById('journal-step').classList.remove('hidden');
+        }
+
+        function backToQuestions() {
+            document.getElementById('questions-step').classList.remove('hidden');
+            document.getElementById('journal-step').classList.add('hidden');
+        }
+
+        function showView(view) {
+            document.getElementById('landing-view').classList.add('hidden');
+            document.getElementById('entry-view').classList.add('hidden');
+            document.getElementById('history-view').classList.add('hidden');
+            document.getElementById('detail-view').classList.add('hidden');
+            document.getElementById('questions-view').classList.add('hidden');
+            document.getElementById('export-view').classList.add('hidden');
+
+            if (view === 'landing') {
+                document.getElementById('landing-view').classList.remove('hidden');
+            } else if (view === 'entry') {
+                document.getElementById('entry-view').classList.remove('hidden');
+            } else if (view === 'history') {
+                document.getElementById('history-view').classList.remove('hidden');
+                renderHistory();
+            } else if (view === 'detail') {
+                document.getElementById('detail-view').classList.remove('hidden');
+            } else if (view === 'questions') {
+                document.getElementById('questions-view').classList.remove('hidden');
+                renderQuestionsList();
+            } else if (view === 'export') {
+                document.getElementById('export-view').classList.remove('hidden');
+            }
+        }
+
+        function renderHistory() {
+            const entries = JSON.parse(localStorage.getItem('wetrack-entries') || '[]');
+            const container = document.getElementById('entries-list');
+
+            if (entries.length === 0) {
+                container.innerHTML = '<p style="color: #9ca3af;">No entries yet. Start by creating your first entry!</p>';
+                return;
+            }
+
+            container.innerHTML = entries.map(entry => {
+                const date = new Date(entry.timestamp);
+                const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+                const preview = entry.journal ? entry.journal.substring(0, 100) + (entry.journal.length > 100 ? '...' : '') : '(No journal text)';
+                const name = entry.answers.name || entry.answers.q_name || 'Unknown';
+
+                return `
+                    <div class="entry-item" onclick="showEntryDetail(${entry.id})" style="cursor: pointer;">
+                        <div class="entry-date">${dateStr}</div>
+                        <div class="entry-answers">Name: ${name}</div>
+                        <div class="entry-preview">${preview}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function showEntryDetail(id) {
+            const entries = JSON.parse(localStorage.getItem('wetrack-entries') || '[]');
+            const entry = entries.find(e => e.id === id);
+
+            if (!entry) return;
+
+            const date = new Date(entry.timestamp);
+            const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+
+            // Try to match answers to current questions, fall back to raw display
+            let answersHtml = '';
+            for (const [key, value] of Object.entries(entry.answers)) {
+                if (value === undefined || value === '') continue;
+                const question = questions.find(q => q.id === key);
+                const label = question ? question.text : key;
+                answersHtml += `<p><strong>${label}</strong><br>${value}</p>`;
+            }
+
+            // Render markdown for journal
+            const journalHtml = entry.journal ? marked.parse(entry.journal) : '<p style="color: #9ca3af;">(No journal text)</p>';
+
+            document.getElementById('entry-detail').innerHTML = `
+                <div class="entry-date" style="font-size: 1rem; margin-bottom: 20px;">${dateStr}</div>
+                <h3>Answers</h3>
+                ${answersHtml || '<p style="color: #9ca3af;">No answers recorded</p>'}
+                <h3 style="margin-top: 24px;">Journal</h3>
+                <div class="markdown-content">${journalHtml}</div>
+                <button class="btn-danger" onclick="deleteEntry(${entry.id})" style="margin-top: 20px;">Delete Entry</button>
+            `;
+
+            showView('detail');
+        }
+
+        function deleteEntry(id) {
+            showConfirm('Are you sure you want to delete this entry?', () => {
+                let entries = JSON.parse(localStorage.getItem('wetrack-entries') || '[]');
+                entries = entries.filter(e => e.id !== id);
+                localStorage.setItem('wetrack-entries', JSON.stringify(entries));
+                showView('history');
+            });
+        }
+
+        // Questions Management
+        function renderQuestionsList() {
+            const container = document.getElementById('questions-list');
+
+            if (questions.length === 0) {
+                container.innerHTML = '<p style="color: #9ca3af;">No questions yet. Add your first question below.</p>';
+                return;
+            }
+
+            container.innerHTML = questions.map((q, index) => {
+                const typeLabel = q.type === 'scale' ? 'Scale' : q.type === 'choice' ? 'Multiple Choice' : 'Text';
+                return `
+                    <div class="question-card">
+                        <div class="question-card-header">
+                            <div class="question-card-title">${q.text}</div>
+                            <span class="question-card-type">${typeLabel}</span>
+                        </div>
+                        <div class="question-card-actions">
+                            ${index > 0 ? `<button class="btn-small" onclick="moveQuestion(${index}, -1)">Move Up</button>` : ''}
+                            ${index < questions.length - 1 ? `<button class="btn-small" onclick="moveQuestion(${index}, 1)">Move Down</button>` : ''}
+                            <button class="btn-small" onclick="editQuestion('${q.id}')">Edit</button>
+                            <button class="btn-danger" onclick="deleteQuestion('${q.id}')">Delete</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function moveQuestion(index, direction) {
+            const newIndex = index + direction;
+            if (newIndex < 0 || newIndex >= questions.length) return;
+
+            const temp = questions[index];
+            questions[index] = questions[newIndex];
+            questions[newIndex] = temp;
+
+            saveQuestions();
+            renderQuestionsList();
+        }
+
+        function openAddQuestionModal() {
+            editingQuestionId = null;
+            tempOptions = [];
+            document.getElementById('modal-title').textContent = 'Add Question';
+            document.getElementById('q-text').value = '';
+            document.getElementById('q-type').value = 'text';
+            document.getElementById('q-min').value = '1';
+            document.getElementById('q-max').value = '10';
+            document.getElementById('q-min-label').value = '';
+            document.getElementById('q-max-label').value = '';
+            document.getElementById('q-placeholder').value = '';
+            updateTypeOptions();
+            renderOptionsContainer();
+            document.getElementById('question-modal').classList.remove('hidden');
+        }
+
+        function editQuestion(id) {
+            const q = questions.find(x => x.id === id);
+            if (!q) return;
+
+            editingQuestionId = id;
+            document.getElementById('modal-title').textContent = 'Edit Question';
+            document.getElementById('q-text').value = q.text;
+            document.getElementById('q-type').value = q.type;
+            document.getElementById('q-min').value = q.min || 1;
+            document.getElementById('q-max').value = q.max || 10;
+            document.getElementById('q-min-label').value = q.minLabel || '';
+            document.getElementById('q-max-label').value = q.maxLabel || '';
+            document.getElementById('q-placeholder').value = q.placeholder || '';
+            tempOptions = q.options ? [...q.options] : [];
+            updateTypeOptions();
+            renderOptionsContainer();
+            document.getElementById('question-modal').classList.remove('hidden');
+        }
+
+        function closeQuestionModal() {
+            document.getElementById('question-modal').classList.add('hidden');
+            editingQuestionId = null;
+            tempOptions = [];
+        }
+
+        function updateTypeOptions() {
+            const type = document.getElementById('q-type').value;
+            document.getElementById('scale-options').classList.toggle('hidden', type !== 'scale');
+            document.getElementById('choice-options').classList.toggle('hidden', type !== 'choice');
+            document.getElementById('text-options').classList.toggle('hidden', type !== 'text');
+        }
+
+        function renderOptionsContainer() {
+            const container = document.getElementById('options-container');
+            container.innerHTML = tempOptions.map((opt, i) => `
+                <span class="option-tag">
+                    ${opt}
+                    <span class="option-remove" onclick="removeOption(${i})">x</span>
+                </span>
+            `).join('');
+        }
+
+        function addOption() {
+            const input = document.getElementById('new-option');
+            const value = input.value.trim();
+            if (value && !tempOptions.includes(value)) {
+                tempOptions.push(value);
+                renderOptionsContainer();
+                input.value = '';
+            }
+        }
+
+        function removeOption(index) {
+            tempOptions.splice(index, 1);
+            renderOptionsContainer();
+        }
+
+        function saveQuestion() {
+            const text = document.getElementById('q-text').value.trim();
+            if (!text) {
+                alert('Please enter a question text');
+                return;
+            }
+
+            const type = document.getElementById('q-type').value;
+
+            const question = {
+                id: editingQuestionId || generateId(),
+                text: text,
+                type: type
+            };
+
+            if (type === 'scale') {
+                question.min = parseInt(document.getElementById('q-min').value) || 1;
+                question.max = parseInt(document.getElementById('q-max').value) || 10;
+                question.minLabel = document.getElementById('q-min-label').value;
+                question.maxLabel = document.getElementById('q-max-label').value;
+            } else if (type === 'choice') {
+                if (tempOptions.length < 2) {
+                    alert('Please add at least 2 options for multiple choice');
+                    return;
+                }
+                question.options = [...tempOptions];
+            } else if (type === 'text') {
+                question.placeholder = document.getElementById('q-placeholder').value;
+            }
+
+            if (editingQuestionId) {
+                const index = questions.findIndex(q => q.id === editingQuestionId);
+                if (index !== -1) {
+                    questions[index] = question;
+                }
+            } else {
+                questions.push(question);
+            }
+
+            saveQuestions();
+            closeQuestionModal();
+            renderQuestionsList();
+        }
+
+        function deleteQuestion(id) {
+            showConfirm('Are you sure you want to delete this question?', () => {
+                questions = questions.filter(q => q.id !== id);
+                saveQuestions();
+                renderQuestionsList();
+            });
+        }
+
+        // Export functions
+        function exportEntriesJSON() {
+            const entries = JSON.parse(localStorage.getItem('wetrack-entries') || '[]');
+            downloadJSON(entries, 'wetrack-entries.json');
+        }
+
+        function exportQuestionsJSON() {
+            downloadJSON(questions, 'wetrack-questions.json');
+        }
+
+        function downloadJSON(data, filename) {
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function exportEntriesCSV() {
+            const entries = JSON.parse(localStorage.getItem('wetrack-entries') || '[]');
+            if (entries.length === 0) {
+                alert('No entries to export');
+                return;
+            }
+
+            // Gather all possible answer keys
+            const allKeys = new Set();
+            entries.forEach(e => {
+                Object.keys(e.answers || {}).forEach(k => allKeys.add(k));
+            });
+            const answerKeys = Array.from(allKeys).sort();
+
+            // Build CSV header
+            const headers = ['id', 'timestamp', ...answerKeys, 'journal'];
+
+            // Build rows
+            const rows = entries.map(e => {
+                const row = [
+                    e.id,
+                    e.timestamp,
+                    ...answerKeys.map(k => {
+                        const val = e.answers[k];
+                        if (val === undefined) return '';
+                        return String(val).replace(/"/g, '""');
+                    }),
+                    (e.journal || '').replace(/"/g, '""')
+                ];
+                return row.map(cell => `"${cell}"`).join(',');
+            });
+
+            const csv = [headers.map(h => `"${h}"`).join(','), ...rows].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'wetrack-entries.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importEntriesJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (!Array.isArray(data)) {
+                        alert('Invalid format: expected an array of entries');
+                        return;
+                    }
+
+                    const existing = JSON.parse(localStorage.getItem('wetrack-entries') || '[]');
+                    const existingIds = new Set(existing.map(e => e.id));
+
+                    let imported = 0;
+                    data.forEach(entry => {
+                        if (entry.id && entry.timestamp && !existingIds.has(entry.id)) {
+                            existing.push(entry);
+                            imported++;
+                        }
+                    });
+
+                    existing.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                    localStorage.setItem('wetrack-entries', JSON.stringify(existing));
+                    alert(`Imported ${imported} new entries`);
+                    event.target.value = '';
+                } catch (err) {
+                    alert('Error parsing file: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function importQuestionsJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (!Array.isArray(data)) {
+                        alert('Invalid format: expected an array of questions');
+                        return;
+                    }
+
+                    if (!confirm('This will replace all current questions. Continue?')) {
+                        return;
+                    }
+
+                    questions = data;
+                    saveQuestions();
+                    alert('Questions imported successfully');
+                    event.target.value = '';
+                    renderQuestionsList();
+                } catch (err) {
+                    alert('Error parsing file: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Initialize
+        loadQuestions();
+        renderQuestions();
+    </script>
+</body>
+</html>
