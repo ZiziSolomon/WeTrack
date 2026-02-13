@@ -87,6 +87,8 @@
             border-radius: var(--theme-border-radius);
             cursor: pointer;
             transition: all 0.2s;
+            font-family: inherit;
+            font-size: inherit;
         }
 
         .choice-btn:hover {
@@ -1295,8 +1297,8 @@
                 card.style.fontFamily = displayFont;
 
                 card.innerHTML = `
-                    <div class="theme-sample-text">The quick brown fox</div>
-                    <div class="theme-sample-accent" style="background: ${displayAccent}; color: ${displayBg};">
+                    <div class="theme-sample-text" style="color: ${displayText} !important; font-family: ${displayFont} !important;">The quick brown fox</div>
+                    <div class="theme-sample-accent" style="background: ${displayAccent} !important; color: ${displayBg} !important; font-family: ${displayFont} !important;">
                         Accent
                     </div>
                 `;
@@ -1456,7 +1458,11 @@
 
             if (selectedThemeIndices.length === 1) {
                 // Single theme selected - apply and move to questions
-                currentTheme = currentThemes[selectedThemeIndices[0]];
+                currentTheme = { ...currentThemes[selectedThemeIndices[0]] };
+                // Apply any manually edited properties
+                Object.keys(lockedProperties).forEach(key => {
+                    currentTheme[key] = lockedProperties[key];
+                });
                 applyTheme(currentTheme);
                 renderQuestions();
                 backToQuestions();
