@@ -453,6 +453,15 @@
             opacity: 0.6;
         }
 
+        .button-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .button-row .btn-primary {
+            flex: 1;
+        }
+
         /* =============================================
            Modals
            ============================================= */
@@ -730,6 +739,202 @@
         .property-btn.locked::before {
             content: '🔒 ';
         }
+
+        /* =============================================
+           Responsive Styles
+           ============================================= */
+        @media (max-width: 768px) {
+            /* Theme selection - stack sidebar below grid */
+            .theme-selection-container {
+                flex-direction: column;
+            }
+
+            .sidebar-columns {
+                flex-direction: row;
+                justify-content: center;
+                width: 100%;
+            }
+
+            .locks-sidebar {
+                width: auto;
+                flex: 1;
+                max-width: 200px;
+            }
+
+            /* Theme grid - 3 columns on tablet */
+            .theme-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            /* Form rows - allow wrapping */
+            .form-row {
+                flex-wrap: wrap;
+            }
+
+            .form-row > * {
+                min-width: 200px;
+            }
+
+            /* Reduce landing page padding */
+            #landing-view .section {
+                padding: 40px 20px !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            /* Smaller body padding */
+            body {
+                padding: 8px;
+            }
+
+            h1 {
+                font-size: 1.3rem;
+            }
+
+            /* Navigation - full width buttons */
+            .nav {
+                flex-direction: column;
+                gap: 6px;
+            }
+
+            .nav .btn-secondary {
+                width: 100%;
+                text-align: center;
+            }
+
+            /* Theme grid - 2 columns on mobile */
+            .theme-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+
+            /* Stack sidebars vertically on small screens */
+            .sidebar-columns {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .locks-sidebar {
+                max-width: none;
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .locks-sidebar h3 {
+                width: 100%;
+                text-align: center;
+            }
+
+            .property-btn {
+                flex: 1;
+                min-width: 80px;
+            }
+
+            .property-editor {
+                flex: 1;
+                min-width: 100px;
+            }
+
+            /* Larger touch targets for buttons */
+            .btn-primary {
+                padding: 14px;
+                font-size: 1rem;
+            }
+
+            .btn-secondary {
+                padding: 12px 16px;
+                min-height: 44px;
+            }
+
+            .btn-small, .btn-danger {
+                padding: 10px 14px;
+                min-height: 44px;
+            }
+
+            .choice-btn {
+                padding: 12px 16px;
+                min-height: 44px;
+            }
+
+            /* Form row - stack on mobile */
+            .form-row {
+                flex-direction: column;
+            }
+
+            .form-row > * {
+                min-width: 100%;
+            }
+
+            /* Reduce section padding */
+            .section {
+                padding: 12px;
+            }
+
+            /* Smaller textarea on mobile */
+            textarea,
+            .markdown-editor {
+                min-height: 150px;
+            }
+
+            /* Modal adjustments */
+            .modal-overlay {
+                padding: 10px;
+            }
+
+            .modal {
+                padding: 16px;
+                max-width: 100%;
+            }
+
+            .modal-actions {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .modal-actions button {
+                width: 100%;
+            }
+
+            /* Question card actions - wrap buttons */
+            .question-card-actions {
+                flex-wrap: wrap;
+            }
+
+            /* Entry items - larger touch target */
+            .entry-item {
+                padding: 14px;
+            }
+
+            /* Landing page */
+            #landing-view .section {
+                padding: 30px 16px !important;
+            }
+
+            #landing-view h2 {
+                font-size: 1.3rem !important;
+                margin-bottom: 24px !important;
+            }
+
+            /* Button rows - stack on mobile */
+            .button-row {
+                flex-direction: column;
+            }
+
+            .button-row button {
+                width: 100%;
+            }
+        }
+
+        /* Focus visibility for accessibility */
+        button:focus-visible,
+        input:focus-visible,
+        select:focus-visible,
+        textarea:focus-visible,
+        .markdown-editor:focus-visible {
+            outline: 2px solid var(--theme-accent);
+            outline-offset: 2px;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
@@ -811,7 +1016,7 @@
                 </div>
             </div>
 
-            <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 16px;">
+            <div class="button-row" style="justify-content: flex-end; margin-top: 16px;">
                 <button class="btn-secondary" onclick="goBackThemes()" id="back-themes-btn" style="display: none;">← Back</button>
                 <button class="btn-primary" onclick="confirmThemeSelection()">Continue</button>
             </div>
@@ -840,9 +1045,9 @@
                      oninput="handleMarkdownInput()"
                      onpaste="handlePaste(event)"></div>
             </div>
-            <div style="display: flex; gap: 12px;">
+            <div class="button-row">
                 <button class="btn-secondary" onclick="backToQuestions()">← Back to Questions</button>
-                <button class="btn-primary" onclick="saveEntry()" style="flex: 1;">Save Entry</button>
+                <button class="btn-primary" onclick="saveEntry()">Save Entry</button>
             </div>
             <div id="success-message" class="success hidden">Entry saved successfully!</div>
         </div>
