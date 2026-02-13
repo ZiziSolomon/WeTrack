@@ -1065,6 +1065,7 @@
         let themeHistory = [];
         let currentTheme = null;
         let lockedProperties = {};
+        let lastSelectedThemeIndex = null;
 
         // Confirmation state
         let skipConfirmsUntil = 0;
@@ -1279,15 +1280,23 @@
                     card.classList.add('selected');
                 }
 
-                card.style.backgroundColor = theme.bgColor;
-                card.style.color = theme.textColor;
-                card.style.borderRadius = theme.borderRadius;
-                card.style.padding = theme.padding;
-                card.style.fontFamily = theme.font;
+                // Apply locked values visually, otherwise use theme's own values
+                const displayBg = lockedProperties.bgColor !== undefined ? lockedProperties.bgColor : theme.bgColor;
+                const displayText = lockedProperties.textColor !== undefined ? lockedProperties.textColor : theme.textColor;
+                const displayAccent = lockedProperties.accentColor !== undefined ? lockedProperties.accentColor : theme.accentColor;
+                const displayRadius = lockedProperties.borderRadius !== undefined ? lockedProperties.borderRadius : theme.borderRadius;
+                const displayPadding = lockedProperties.padding !== undefined ? lockedProperties.padding : theme.padding;
+                const displayFont = lockedProperties.font !== undefined ? lockedProperties.font : theme.font;
+
+                card.style.backgroundColor = displayBg;
+                card.style.color = displayText;
+                card.style.borderRadius = displayRadius;
+                card.style.padding = displayPadding;
+                card.style.fontFamily = displayFont;
 
                 card.innerHTML = `
                     <div class="theme-sample-text">The quick brown fox</div>
-                    <div class="theme-sample-accent" style="background: ${theme.accentColor}; color: ${theme.bgColor};">
+                    <div class="theme-sample-accent" style="background: ${displayAccent}; color: ${displayBg};">
                         Accent
                     </div>
                 `;
@@ -1303,6 +1312,8 @@
                 selectedThemeIndices.splice(pos, 1);
             } else {
                 selectedThemeIndices.push(index);
+                // Track the most recently selected theme
+                lastSelectedThemeIndex = index;
             }
             renderThemeGrid();
             renderPropertyLocks();
@@ -1351,6 +1362,8 @@
                 lockedProperties[key] = value;
             }
             renderPropertyLocks();
+            renderThemeGrid();
+            updateEditorValues();
         }
 
         function editProperty(key, value) {
@@ -1372,6 +1385,7 @@
             lockedProperties[key] = value;
             applyTheme(currentTheme);
             renderPropertyLocks();
+            renderThemeGrid();
         }
 
         function hexToHsl(hex) {
@@ -1412,15 +1426,26 @@
         }
 
         function updateEditorValues() {
-            const theme = currentTheme || (selectedThemeIndices.length > 0 ? currentThemes[selectedThemeIndices[0]] : currentThemes[0]);
-            if (!theme) return;
+            // Use the most recently selected theme, or fall back to first selected, or first theme
+            const baseTheme = (lastSelectedThemeIndex !== null && currentThemes[lastSelectedThemeIndex])
+                ? currentThemes[lastSelectedThemeIndex]
+                : (selectedThemeIndices.length > 0 ? currentThemes[selectedThemeIndices[0]] : currentThemes[0]);
+            if (!baseTheme) return;
 
-            document.getElementById('edit-bg').value = hslToHex(theme.bgColor);
-            document.getElementById('edit-text').value = hslToHex(theme.textColor);
-            document.getElementById('edit-accent').value = hslToHex(theme.accentColor);
-            document.getElementById('edit-radius').value = parseInt(theme.borderRadius) || 12;
-            document.getElementById('edit-padding').value = parseInt(theme.padding) || 16;
-            document.getElementById('edit-font').value = theme.font;
+            // For each property, use locked value if locked, otherwise use the base theme's value
+            const bgColor = lockedProperties.bgColor !== undefined ? lockedProperties.bgColor : baseTheme.bgColor;
+            const textColor = lockedProperties.textColor !== undefined ? lockedProperties.textColor : baseTheme.textColor;
+            const accentColor = lockedProperties.accentColor !== undefined ? lockedProperties.accentColor : baseTheme.accentColor;
+            const borderRadius = lockedProperties.borderRadius !== undefined ? lockedProperties.borderRadius : baseTheme.borderRadius;
+            const padding = lockedProperties.padding !== undefined ? lockedProperties.padding : baseTheme.padding;
+            const font = lockedProperties.font !== undefined ? lockedProperties.font : baseTheme.font;
+
+            document.getElementById('edit-bg').value = hslToHex(bgColor);
+            document.getElementById('edit-text').value = hslToHex(textColor);
+            document.getElementById('edit-accent').value = hslToHex(accentColor);
+            document.getElementById('edit-radius').value = parseInt(borderRadius) || 12;
+            document.getElementById('edit-padding').value = parseInt(padding) || 16;
+            document.getElementById('edit-font').value = font;
         }
 
         function confirmThemeSelection() {
@@ -1439,15 +1464,17 @@
             } else {
                 // Multiple themes - generate children
                 const selectedThemes = selectedThemeIndices.map(i => currentThemes[i]);
-                themeHistory.push({ themes: currentThemes, selected: selectedThemeIndices });
+                themeHistory.push({ themes: currentThemes, selected: selectedThemeIndices, lastSelected: lastSelectedThemeIndex });
                 currentThemes = generateChildThemes(selectedThemes);
                 selectedThemeIndices = [];
+                lastSelectedThemeIndex = null;
 
                 // Apply first selected theme
                 currentTheme = selectedThemes[0];
                 applyTheme(currentTheme);
 
                 renderThemeGrid();
+                updateEditorValues();
                 document.getElementById('back-themes-btn').style.display = 'inline-block';
                 document.getElementById('theme-instruction').textContent = 'Refine your selection - pick themes you like';
             }
@@ -1459,7 +1486,9 @@
             const previous = themeHistory.pop();
             currentThemes = previous.themes;
             selectedThemeIndices = previous.selected;
+            lastSelectedThemeIndex = previous.lastSelected !== undefined ? previous.lastSelected : null;
             renderThemeGrid();
+            updateEditorValues();
 
             if (themeHistory.length === 0) {
                 document.getElementById('back-themes-btn').style.display = 'none';
@@ -1486,6 +1515,7 @@
             themeHistory = [];
             currentTheme = null;
             lockedProperties = {};
+            lastSelectedThemeIndex = null;
             renderThemeGrid();
             renderPropertyLocks();
             updateEditorValues();
