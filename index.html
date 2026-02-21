@@ -686,15 +686,160 @@
             opacity: 0.7;
         }
 
-        .property-editor input[type="color"] {
+        /* Color swatch trigger */
+        .color-swatch {
             width: 100%;
-            height: 28px;
-            padding: 2px;
+            height: 36px;
+            padding: 0;
             border: 2px solid var(--theme-accent);
             border-radius: var(--theme-border-radius);
+            cursor: pointer;
+            display: block;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .color-swatch:hover, .color-swatch:focus {
+            transform: scale(1.04);
+            outline: 2px solid var(--theme-accent);
+            outline-offset: 2px;
+        }
+
+        /* Color picker overlay + panel */
+        #color-picker-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.65);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        #color-picker-panel {
             background: var(--theme-bg);
+            border: 2px solid var(--theme-accent);
+            border-radius: var(--theme-border-radius);
+            padding: 20px;
+            width: 100%;
+            max-width: 380px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        #cp-title {
+            margin: 0;
+            font-size: 1rem;
+            color: var(--theme-accent);
+            text-align: center;
+        }
+        #cp-preview {
+            width: 100%;
+            height: 52px;
+            border-radius: calc(var(--theme-border-radius) / 2);
+            border: 1px solid rgba(128,128,128,0.35);
+        }
+        .cp-row {
+            display: grid;
+            grid-template-columns: 18px 1fr 52px;
+            align-items: center;
+            gap: 10px;
+        }
+        .cp-hex-row {
+            display: grid;
+            grid-template-columns: 18px 1fr;
+            align-items: center;
+            gap: 10px;
+        }
+        .cp-label {
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: var(--theme-text);
+            opacity: 0.65;
+            text-align: center;
+        }
+        /* Slider track */
+        .cp-row input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 22px;
+            border-radius: 11px;
+            outline: none;
+            cursor: pointer;
+            border: 1px solid rgba(128,128,128,0.3);
+            padding: 0;
+        }
+        .cp-row input[type="range"]::-webkit-slider-runnable-track {
+            border-radius: 11px;
+            height: 22px;
+        }
+        .cp-row input[type="range"]::-moz-range-track {
+            border-radius: 11px;
+            height: 22px;
+            border: 1px solid rgba(128,128,128,0.3);
+        }
+        /* Slider thumb — large for touch */
+        .cp-row input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #fff;
+            border: 2px solid rgba(0,0,0,0.45);
+            box-shadow: 0 1px 5px rgba(0,0,0,0.45);
+            cursor: pointer;
+            margin-top: -3px;
+        }
+        .cp-row input[type="range"]::-moz-range-thumb {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #fff;
+            border: 2px solid rgba(0,0,0,0.45);
+            box-shadow: 0 1px 5px rgba(0,0,0,0.45);
             cursor: pointer;
         }
+        /* Number inputs */
+        .cp-row input[type="number"] {
+            width: 100%;
+            padding: 5px 4px;
+            font-size: 0.85rem;
+            background: var(--theme-bg);
+            color: var(--theme-text);
+            border: 2px solid var(--theme-accent);
+            border-radius: 6px;
+            text-align: center;
+            -moz-appearance: textfield;
+        }
+        .cp-row input[type="number"]::-webkit-outer-spin-button,
+        .cp-row input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+        }
+        /* Hex input */
+        #cp-hex {
+            padding: 8px 10px;
+            font-size: 0.9rem;
+            font-family: monospace;
+            background: var(--theme-bg);
+            color: var(--theme-text);
+            border: 2px solid var(--theme-accent);
+            border-radius: 6px;
+            width: 100%;
+            text-align: center;
+            letter-spacing: 0.05em;
+        }
+        #cp-done {
+            padding: 12px;
+            background: var(--theme-accent);
+            color: var(--theme-bg);
+            border: none;
+            border-radius: var(--theme-border-radius);
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+        #cp-done:hover { opacity: 0.85; }
 
         .property-editor input[type="range"] {
             width: 100%;
@@ -980,15 +1125,15 @@
                         <div id="property-editors">
                             <div class="property-editor">
                                 <label>Background</label>
-                                <input type="color" id="edit-bg" onchange="editProperty('bgColor', this.value)">
+                                <button class="color-swatch" id="swatch-bgColor" onclick="openColorPicker('bgColor')" title="Edit background colour"></button>
                             </div>
                             <div class="property-editor">
                                 <label>Text</label>
-                                <input type="color" id="edit-text" onchange="editProperty('textColor', this.value)">
+                                <button class="color-swatch" id="swatch-textColor" onclick="openColorPicker('textColor')" title="Edit text colour"></button>
                             </div>
                             <div class="property-editor">
                                 <label>Accent</label>
-                                <input type="color" id="edit-accent" onchange="editProperty('accentColor', this.value)">
+                                <button class="color-swatch" id="swatch-accentColor" onclick="openColorPicker('accentColor')" title="Edit accent colour"></button>
                             </div>
                             <div class="property-editor">
                                 <label>Corners</label>
@@ -1632,6 +1777,132 @@
             return `#${f(0)}${f(8)}${f(4)}`;
         }
 
+        /* =============================================
+           Custom Colour Picker
+           ============================================= */
+        let activeColorKey = null;
+        let cpH = 0, cpS = 0, cpL = 0;
+
+        const CP_LABELS = { bgColor: 'Background', textColor: 'Text', accentColor: 'Accent' };
+
+        function parseHslStr(hsl) {
+            const m = hsl.match(/hsl\(([^,]+),\s*([^,]+)%,\s*([^)]+)%\)/);
+            if (!m) return { h: 0, s: 0, l: 50 };
+            return { h: parseFloat(m[1]), s: parseFloat(m[2]), l: parseFloat(m[3]) };
+        }
+
+        function openColorPicker(key) {
+            activeColorKey = key;
+            const baseTheme = (lastSelectedThemeIndex !== null && currentThemes[lastSelectedThemeIndex])
+                ? currentThemes[lastSelectedThemeIndex]
+                : (selectedThemeIndices.length > 0 ? currentThemes[selectedThemeIndices[0]] : currentThemes[0]);
+            const hslStr = (lockedProperties[key] !== undefined)
+                ? lockedProperties[key]
+                : (baseTheme ? baseTheme[key] : 'hsl(0, 0%, 50%)');
+            const { h, s, l } = parseHslStr(hslStr || 'hsl(0, 0%, 50%)');
+            cpH = h; cpS = s; cpL = l;
+            document.getElementById('cp-title').textContent = CP_LABELS[key] || 'Colour';
+            syncPickerUI();
+            document.getElementById('color-picker-overlay').style.display = 'flex';
+        }
+
+        function closeColorPicker() {
+            document.getElementById('color-picker-overlay').style.display = 'none';
+        }
+
+        function syncPickerUI() {
+            document.getElementById('cp-hue').value = cpH;
+            document.getElementById('cp-sat').value = cpS;
+            document.getElementById('cp-lit').value = cpL;
+            document.getElementById('cp-hue-num').value = Math.round(cpH);
+            document.getElementById('cp-sat-num').value = Math.round(cpS);
+            document.getElementById('cp-lit-num').value = Math.round(cpL);
+            const hex = hslToHex(`hsl(${cpH}, ${cpS}%, ${cpL}%)`);
+            document.getElementById('cp-hex').value = hex;
+            document.getElementById('cp-preview').style.background = hex;
+            updateSliderGradients();
+            applyPickerColor();
+        }
+
+        function updateColorFromSliders() {
+            cpH = parseFloat(document.getElementById('cp-hue').value);
+            cpS = parseFloat(document.getElementById('cp-sat').value);
+            cpL = parseFloat(document.getElementById('cp-lit').value);
+            document.getElementById('cp-hue-num').value = Math.round(cpH);
+            document.getElementById('cp-sat-num').value = Math.round(cpS);
+            document.getElementById('cp-lit-num').value = Math.round(cpL);
+            const hex = hslToHex(`hsl(${cpH}, ${cpS}%, ${cpL}%)`);
+            document.getElementById('cp-hex').value = hex;
+            document.getElementById('cp-preview').style.background = hex;
+            updateSliderGradients();
+            applyPickerColor();
+        }
+
+        function updateColorFromNumbers() {
+            const hNum = parseFloat(document.getElementById('cp-hue-num').value);
+            const sNum = parseFloat(document.getElementById('cp-sat-num').value);
+            const lNum = parseFloat(document.getElementById('cp-lit-num').value);
+            if (!isNaN(hNum)) cpH = Math.min(360, Math.max(0, hNum));
+            if (!isNaN(sNum)) cpS = Math.min(100, Math.max(0, sNum));
+            if (!isNaN(lNum)) cpL = Math.min(100, Math.max(0, lNum));
+            document.getElementById('cp-hue').value = cpH;
+            document.getElementById('cp-sat').value = cpS;
+            document.getElementById('cp-lit').value = cpL;
+            const hex = hslToHex(`hsl(${cpH}, ${cpS}%, ${cpL}%)`);
+            document.getElementById('cp-hex').value = hex;
+            document.getElementById('cp-preview').style.background = hex;
+            updateSliderGradients();
+            applyPickerColor();
+        }
+
+        function updateColorFromHex() {
+            const hex = document.getElementById('cp-hex').value.trim();
+            if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return;
+            const { h, s, l } = parseHslStr(hexToHsl(hex));
+            cpH = h; cpS = s; cpL = l;
+            document.getElementById('cp-hue').value = cpH;
+            document.getElementById('cp-sat').value = cpS;
+            document.getElementById('cp-lit').value = cpL;
+            document.getElementById('cp-hue-num').value = Math.round(cpH);
+            document.getElementById('cp-sat-num').value = Math.round(cpS);
+            document.getElementById('cp-lit-num').value = Math.round(cpL);
+            document.getElementById('cp-preview').style.background = hex;
+            updateSliderGradients();
+            applyPickerColor();
+        }
+
+        function updateSliderGradients() {
+            const h = cpH, s = cpS, l = cpL;
+            // Hue: rainbow strip at current S and L
+            document.getElementById('cp-hue').style.background =
+                `linear-gradient(to right, hsl(0,${s}%,${l}%), hsl(60,${s}%,${l}%), hsl(120,${s}%,${l}%), hsl(180,${s}%,${l}%), hsl(240,${s}%,${l}%), hsl(300,${s}%,${l}%), hsl(360,${s}%,${l}%))`;
+            // Saturation: grey → vivid at current H and L
+            document.getElementById('cp-sat').style.background =
+                `linear-gradient(to right, hsl(${h},0%,${l}%), hsl(${h},100%,${l}%))`;
+            // Lightness: black → vivid → white
+            document.getElementById('cp-lit').style.background =
+                `linear-gradient(to right, hsl(${h},${s}%,0%), hsl(${h},${s}%,50%), hsl(${h},${s}%,100%))`;
+        }
+
+        function applyPickerColor() {
+            if (!activeColorKey) return;
+            if (!currentTheme) {
+                if (selectedThemeIndices.length > 0) {
+                    currentTheme = { ...currentThemes[selectedThemeIndices[0]] };
+                } else if (currentThemes.length > 0) {
+                    currentTheme = { ...currentThemes[0] };
+                } else return;
+            }
+            const hslValue = `hsl(${Math.round(cpH)}, ${Math.round(cpS)}%, ${Math.round(cpL)}%)`;
+            currentTheme[activeColorKey] = hslValue;
+            lockedProperties[activeColorKey] = hslValue;
+            applyTheme(currentTheme);
+            renderPropertyLocks();
+            renderThemeGrid();
+            const swatch = document.getElementById('swatch-' + activeColorKey);
+            if (swatch) swatch.style.background = hslToHex(hslValue);
+        }
+
         function updateEditorValues() {
             // Use the most recently selected theme, or fall back to first selected, or first theme
             const baseTheme = (lastSelectedThemeIndex !== null && currentThemes[lastSelectedThemeIndex])
@@ -1647,9 +1918,12 @@
             const padding = lockedProperties.padding !== undefined ? lockedProperties.padding : baseTheme.padding;
             const font = lockedProperties.font !== undefined ? lockedProperties.font : baseTheme.font;
 
-            document.getElementById('edit-bg').value = hslToHex(bgColor);
-            document.getElementById('edit-text').value = hslToHex(textColor);
-            document.getElementById('edit-accent').value = hslToHex(accentColor);
+            const bgSwatch = document.getElementById('swatch-bgColor');
+            const textSwatch = document.getElementById('swatch-textColor');
+            const accentSwatch = document.getElementById('swatch-accentColor');
+            if (bgSwatch) bgSwatch.style.background = hslToHex(bgColor);
+            if (textSwatch) textSwatch.style.background = hslToHex(textColor);
+            if (accentSwatch) accentSwatch.style.background = hslToHex(accentColor);
             document.getElementById('edit-radius').value = parseInt(borderRadius) || 12;
             document.getElementById('edit-padding').value = parseInt(padding) || 16;
             document.getElementById('edit-font').value = font;
@@ -2449,5 +2723,36 @@
         renderQuestions();
         loadLastEntryTheme();
     </script>
+
+    <!-- Custom colour picker modal -->
+    <div id="color-picker-overlay" onclick="if(event.target===this)closeColorPicker()">
+        <div id="color-picker-panel" onclick="event.stopPropagation()">
+            <h3 id="cp-title">Colour</h3>
+            <div id="cp-preview"></div>
+
+            <div class="cp-row">
+                <span class="cp-label">H</span>
+                <input type="range" id="cp-hue" min="0" max="360" oninput="updateColorFromSliders()">
+                <input type="number" id="cp-hue-num" min="0" max="360" oninput="updateColorFromNumbers()">
+            </div>
+            <div class="cp-row">
+                <span class="cp-label">S</span>
+                <input type="range" id="cp-sat" min="0" max="100" oninput="updateColorFromSliders()">
+                <input type="number" id="cp-sat-num" min="0" max="100" oninput="updateColorFromNumbers()">
+            </div>
+            <div class="cp-row">
+                <span class="cp-label">L</span>
+                <input type="range" id="cp-lit" min="0" max="100" oninput="updateColorFromSliders()">
+                <input type="number" id="cp-lit-num" min="0" max="100" oninput="updateColorFromNumbers()">
+            </div>
+
+            <div class="cp-hex-row">
+                <span class="cp-label">#</span>
+                <input type="text" id="cp-hex" maxlength="7" placeholder="#rrggbb" oninput="updateColorFromHex()">
+            </div>
+
+            <button id="cp-done" onclick="closeColorPicker()">Done</button>
+        </div>
+    </div>
 </body>
 </html>
