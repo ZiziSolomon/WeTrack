@@ -1849,13 +1849,15 @@
         }
 
         function editProperty(key, value) {
-            // Update the current theme or create one from first selected
+            // Build from the most relevant base theme, preserving locked properties
             if (!currentTheme) {
-                if (selectedThemeIndices.length > 0) {
-                    currentTheme = { ...currentThemes[selectedThemeIndices[0]] };
-                } else {
-                    currentTheme = { ...currentThemes[0] };
-                }
+                const baseTheme = (lastSelectedThemeIndex !== null && currentThemes[lastSelectedThemeIndex])
+                    ? currentThemes[lastSelectedThemeIndex]
+                    : (selectedThemeIndices.length > 0 ? currentThemes[selectedThemeIndices[0]] : currentThemes[0]);
+                currentTheme = { ...baseTheme };
+                Object.keys(lockedProperties).forEach(k => {
+                    currentTheme[k] = lockedProperties[k];
+                });
             }
 
             // Convert hex to HSL for color properties
@@ -2092,11 +2094,14 @@
         function applyPickerColor() {
             if (!activeColorKey) return;
             if (!currentTheme) {
-                if (selectedThemeIndices.length > 0) {
-                    currentTheme = { ...currentThemes[selectedThemeIndices[0]] };
-                } else if (currentThemes.length > 0) {
-                    currentTheme = { ...currentThemes[0] };
-                } else return;
+                const baseTheme = (lastSelectedThemeIndex !== null && currentThemes[lastSelectedThemeIndex])
+                    ? currentThemes[lastSelectedThemeIndex]
+                    : (selectedThemeIndices.length > 0 ? currentThemes[selectedThemeIndices[0]] : currentThemes[0]);
+                if (!baseTheme) return;
+                currentTheme = { ...baseTheme };
+                Object.keys(lockedProperties).forEach(k => {
+                    currentTheme[k] = lockedProperties[k];
+                });
             }
             const hslValue = `hsl(${Math.round(cpH)}, ${Math.round(cpS)}%, ${Math.round(cpL)}%)`;
             currentTheme[activeColorKey] = hslValue;
