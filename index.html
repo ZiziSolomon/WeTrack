@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WeTrack - System Journal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Lexend:wght@400;700&display=swap" rel="stylesheet">
     <style>
         /* =============================================
            CSS Variables & Reset
@@ -841,6 +844,126 @@
         }
         #cp-done:hover { opacity: 0.85; }
 
+        /* Font picker trigger */
+        #font-pick-trigger {
+            width: 100%;
+            padding: 6px 10px;
+            font-size: 0.85rem;
+            border: 2px solid var(--theme-accent);
+            border-radius: var(--theme-border-radius);
+            background: var(--theme-bg);
+            color: var(--theme-text);
+            cursor: pointer;
+            text-align: left;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: opacity 0.15s;
+        }
+        #font-pick-trigger:hover { opacity: 0.8; }
+
+        /* Font picker modal */
+        #font-picker-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.65);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        #font-picker-panel {
+            background: var(--theme-bg);
+            border: 2px solid var(--theme-accent);
+            border-radius: var(--theme-border-radius);
+            padding: 20px;
+            width: 100%;
+            max-width: 440px;
+            max-height: 82vh;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        #fp-title {
+            margin: 0;
+            font-size: 1rem;
+            color: var(--theme-accent);
+            text-align: center;
+            flex-shrink: 0;
+        }
+        #fp-categories {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .fp-cat {
+            padding: 5px 13px;
+            border: 2px solid var(--theme-accent);
+            background: transparent;
+            color: var(--theme-accent);
+            border-radius: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .fp-cat.active, .fp-cat:hover {
+            background: var(--theme-accent);
+            color: var(--theme-bg);
+        }
+        #fp-font-list {
+            overflow-y: auto;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            min-height: 0;
+        }
+        .fp-font-btn {
+            padding: 10px 14px;
+            border: 2px solid transparent;
+            border-radius: var(--theme-border-radius);
+            background: rgba(128, 128, 128, 0.1);
+            color: var(--theme-text);
+            cursor: pointer;
+            text-align: left;
+            transition: border-color 0.15s, background 0.15s;
+            width: 100%;
+        }
+        .fp-font-btn:hover {
+            border-color: var(--theme-accent);
+            background: rgba(128, 128, 128, 0.2);
+        }
+        .fp-font-btn.selected {
+            border-color: var(--theme-accent);
+            background: rgba(128, 128, 128, 0.25);
+        }
+        .fp-font-name {
+            font-size: 1rem;
+            display: block;
+        }
+        .fp-font-sample {
+            font-size: 0.8rem;
+            opacity: 0.5;
+            display: block;
+            margin-top: 3px;
+        }
+        #fp-done {
+            padding: 12px;
+            background: var(--theme-accent);
+            color: var(--theme-bg);
+            border: none;
+            border-radius: var(--theme-border-radius);
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.15s;
+            flex-shrink: 0;
+        }
+        #fp-done:hover { opacity: 0.85; }
+
         .property-editor input[type="range"] {
             width: 100%;
             height: 6px;
@@ -1145,16 +1268,7 @@
                             </div>
                             <div class="property-editor">
                                 <label>Font</label>
-                                <select id="edit-font" onchange="editProperty('font', this.value)">
-                                    <option value="Georgia, serif">Georgia</option>
-                                    <option value="'Courier New', monospace">Courier</option>
-                                    <option value="Arial, sans-serif">Arial</option>
-                                    <option value="Verdana, sans-serif">Verdana</option>
-                                    <option value="'Times New Roman', serif">Times</option>
-                                    <option value="'Comic Sans MS', cursive">Comic Sans</option>
-                                    <option value="system-ui, sans-serif">System UI</option>
-                                    <option value="'Trebuchet MS', sans-serif">Trebuchet</option>
-                                </select>
+                                <button id="font-pick-trigger" onclick="openFontPicker()" title="Choose font">Font</button>
                             </div>
                         </div>
                     </div>
@@ -1520,7 +1634,9 @@
             "'Times New Roman', serif",
             "'Comic Sans MS', cursive",
             'system-ui, sans-serif',
-            "'Trebuchet MS', sans-serif"
+            "'Trebuchet MS', sans-serif",
+            "'Lexend', sans-serif",
+            "'Atkinson Hyperlegible', sans-serif"
         ];
 
         function generateInitialThemes() {
@@ -1903,6 +2019,93 @@
             if (swatch) swatch.style.background = hslToHex(hslValue);
         }
 
+        /* =============================================
+           Font Picker
+           ============================================= */
+        const FONTS = [
+            // Serif
+            { name: 'Georgia',           stack: 'Georgia, serif',                              categories: ['serif'] },
+            { name: 'Times New Roman',   stack: "'Times New Roman', serif",                    categories: ['serif'] },
+            { name: 'Palatino',          stack: "'Palatino Linotype', Palatino, serif",        categories: ['serif'] },
+            { name: 'Book Antiqua',      stack: "'Book Antiqua', Palatino, serif",             categories: ['serif'] },
+            // Sans-serif
+            { name: 'System UI',         stack: 'system-ui, sans-serif',                       categories: ['sans-serif'] },
+            { name: 'Arial',             stack: 'Arial, sans-serif',                           categories: ['sans-serif'] },
+            { name: 'Verdana',           stack: 'Verdana, sans-serif',                         categories: ['sans-serif', 'dyslexic'] },
+            { name: 'Trebuchet MS',      stack: "'Trebuchet MS', sans-serif",                  categories: ['sans-serif'] },
+            { name: 'Segoe UI',          stack: "'Segoe UI', Tahoma, sans-serif",              categories: ['sans-serif'] },
+            { name: 'Tahoma',            stack: 'Tahoma, Geneva, sans-serif',                  categories: ['sans-serif'] },
+            // Monospaced
+            { name: 'Courier New',       stack: "'Courier New', monospace",                    categories: ['mono'] },
+            { name: 'Consolas',          stack: 'Consolas, Monaco, monospace',                 categories: ['mono'] },
+            { name: 'Lucida Console',    stack: "'Lucida Console', Monaco, monospace",         categories: ['mono'] },
+            // Dyslexic-friendly
+            { name: 'Lexend',            stack: "'Lexend', sans-serif",                        categories: ['dyslexic', 'sans-serif'] },
+            { name: 'Atkinson Hyperlegible', stack: "'Atkinson Hyperlegible', sans-serif",     categories: ['dyslexic', 'sans-serif'] },
+            { name: 'Comic Sans MS',     stack: "'Comic Sans MS', cursive",                    categories: ['dyslexic'] },
+        ];
+
+        let activeFontCategory = 'all';
+        let currentFontStack = null;
+
+        function openFontPicker() {
+            const baseTheme = (lastSelectedThemeIndex !== null && currentThemes[lastSelectedThemeIndex])
+                ? currentThemes[lastSelectedThemeIndex]
+                : (selectedThemeIndices.length > 0 ? currentThemes[selectedThemeIndices[0]] : currentThemes[0]);
+            currentFontStack = (lockedProperties.font !== undefined)
+                ? lockedProperties.font
+                : (baseTheme ? baseTheme.font : FONTS[0].stack);
+            // Reset to All category
+            setFontCategory('all');
+            document.getElementById('font-picker-overlay').style.display = 'flex';
+        }
+
+        function closeFontPicker() {
+            document.getElementById('font-picker-overlay').style.display = 'none';
+        }
+
+        function setFontCategory(cat) {
+            activeFontCategory = cat;
+            document.querySelectorAll('.fp-cat').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.cat === cat);
+            });
+            renderFontList();
+        }
+
+        function renderFontList() {
+            const list = document.getElementById('fp-font-list');
+            const filtered = activeFontCategory === 'all'
+                ? FONTS
+                : FONTS.filter(f => f.categories.includes(activeFontCategory));
+
+            list.innerHTML = filtered.map(f => {
+                const isSelected = f.stack === currentFontStack;
+                return `<button class="fp-font-btn${isSelected ? ' selected' : ''}"
+                    style="font-family: ${f.stack}"
+                    onclick="selectFont(${JSON.stringify(f.stack)}, ${JSON.stringify(f.name)})">
+                    <span class="fp-font-name">${escapeHtml(f.name)}</span>
+                    <span class="fp-font-sample">Aa Bb Cc — The quick brown fox</span>
+                </button>`;
+            }).join('');
+        }
+
+        function selectFont(stack, name) {
+            currentFontStack = stack;
+            editProperty('font', stack);
+            updateFontTrigger(stack, name);
+            renderFontList();
+        }
+
+        function updateFontTrigger(stack, name) {
+            const trigger = document.getElementById('font-pick-trigger');
+            if (!trigger) return;
+            const displayName = name
+                || (FONTS.find(f => f.stack === stack) || {}).name
+                || 'Font';
+            trigger.textContent = displayName;
+            trigger.style.fontFamily = stack || 'inherit';
+        }
+
         function updateEditorValues() {
             // Use the most recently selected theme, or fall back to first selected, or first theme
             const baseTheme = (lastSelectedThemeIndex !== null && currentThemes[lastSelectedThemeIndex])
@@ -1926,7 +2129,7 @@
             if (accentSwatch) accentSwatch.style.background = hslToHex(accentColor);
             document.getElementById('edit-radius').value = parseInt(borderRadius) || 12;
             document.getElementById('edit-padding').value = parseInt(padding) || 16;
-            document.getElementById('edit-font').value = font;
+            updateFontTrigger(font);
         }
 
         function confirmThemeSelection() {
@@ -2723,6 +2926,22 @@
         renderQuestions();
         loadLastEntryTheme();
     </script>
+
+    <!-- Font picker modal -->
+    <div id="font-picker-overlay" onclick="if(event.target===this)closeFontPicker()">
+        <div id="font-picker-panel" onclick="event.stopPropagation()">
+            <h3 id="fp-title">Font</h3>
+            <div id="fp-categories">
+                <button class="fp-cat active" data-cat="all" onclick="setFontCategory('all')">All</button>
+                <button class="fp-cat" data-cat="serif" onclick="setFontCategory('serif')">Serif</button>
+                <button class="fp-cat" data-cat="sans-serif" onclick="setFontCategory('sans-serif')">Sans-Serif</button>
+                <button class="fp-cat" data-cat="mono" onclick="setFontCategory('mono')">Mono</button>
+                <button class="fp-cat" data-cat="dyslexic" onclick="setFontCategory('dyslexic')">Dyslexic-friendly</button>
+            </div>
+            <div id="fp-font-list"></div>
+            <button id="fp-done" onclick="closeFontPicker()">Done</button>
+        </div>
+    </div>
 
     <!-- Custom colour picker modal -->
     <div id="color-picker-overlay" onclick="if(event.target===this)closeColorPicker()">
