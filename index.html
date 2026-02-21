@@ -2169,19 +2169,22 @@
 
             list.innerHTML = filtered.map(f => {
                 const isSelected = f.stack === currentFontStack;
+                const idx = FONTS.indexOf(f);
                 return `<button class="fp-font-btn${isSelected ? ' selected' : ''}"
                     style="font-family: ${f.stack}"
-                    onclick="selectFont(${JSON.stringify(f.stack)}, ${JSON.stringify(f.name)})">
+                    onclick="selectFont(${idx})">
                     <span class="fp-font-name">${escapeHtml(f.name)}</span>
                     <span class="fp-font-sample">Aa Bb Cc — The quick brown fox</span>
                 </button>`;
             }).join('');
         }
 
-        function selectFont(stack, name) {
-            currentFontStack = stack;
-            editProperty('font', stack);
-            updateFontTrigger(stack, name);
+        function selectFont(idx) {
+            const f = FONTS[idx];
+            if (!f) return;
+            currentFontStack = f.stack;
+            editProperty('font', f.stack);
+            updateFontTrigger(f.stack, f.name);
             renderFontList();
         }
 
