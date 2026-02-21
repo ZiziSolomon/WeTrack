@@ -1848,16 +1848,31 @@
             updateEditorValues();
         }
 
+        function getCurrentAppliedTheme() {
+            const cs = getComputedStyle(document.documentElement);
+            const get = prop => cs.getPropertyValue(prop).trim();
+            const normalizeColor = val => {
+                if (val.startsWith('hsl')) return val;
+                if (val.startsWith('#')) {
+                    if (val.length === 4) val = '#' + val[1]+val[1] + val[2]+val[2] + val[3]+val[3];
+                    return hexToHsl(val);
+                }
+                return 'hsl(0, 0%, 50%)';
+            };
+            return {
+                bgColor: normalizeColor(get('--theme-bg')),
+                textColor: normalizeColor(get('--theme-text')),
+                accentColor: normalizeColor(get('--theme-accent')),
+                borderRadius: get('--theme-border-radius') || '12px',
+                padding: get('--theme-padding') || '16px',
+                font: get('--theme-font') || 'system-ui, sans-serif'
+            };
+        }
+
         function editProperty(key, value) {
-            // Build from the most relevant base theme, preserving locked properties
+            // Capture what's currently on screen rather than picking a generated theme
             if (!currentTheme) {
-                const baseTheme = (lastSelectedThemeIndex !== null && currentThemes[lastSelectedThemeIndex])
-                    ? currentThemes[lastSelectedThemeIndex]
-                    : (selectedThemeIndices.length > 0 ? currentThemes[selectedThemeIndices[0]] : currentThemes[0]);
-                currentTheme = { ...baseTheme };
-                Object.keys(lockedProperties).forEach(k => {
-                    currentTheme[k] = lockedProperties[k];
-                });
+                currentTheme = getCurrentAppliedTheme();
             }
 
             // Convert hex to HSL for color properties
@@ -2094,14 +2109,7 @@
         function applyPickerColor() {
             if (!activeColorKey) return;
             if (!currentTheme) {
-                const baseTheme = (lastSelectedThemeIndex !== null && currentThemes[lastSelectedThemeIndex])
-                    ? currentThemes[lastSelectedThemeIndex]
-                    : (selectedThemeIndices.length > 0 ? currentThemes[selectedThemeIndices[0]] : currentThemes[0]);
-                if (!baseTheme) return;
-                currentTheme = { ...baseTheme };
-                Object.keys(lockedProperties).forEach(k => {
-                    currentTheme[k] = lockedProperties[k];
-                });
+                currentTheme = getCurrentAppliedTheme();
             }
             const hslValue = `hsl(${Math.round(cpH)}, ${Math.round(cpS)}%, ${Math.round(cpL)}%)`;
             currentTheme[activeColorKey] = hslValue;
