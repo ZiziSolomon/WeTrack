@@ -2469,14 +2469,68 @@
                 const editor = document.getElementById('journal-text');
                 const selection = window.getSelection();
 
-                // Save cursor position
+                // Save cursor position by walking the DOM, counting
+                // text characters and <br> elements consistently with
+                // restoreCursor (which also counts each <br> as 1).
+                // We can't use preCaretRange.toString().length because
+                // toString() silently drops <br> elements, causing the
+                // cursor to jump backwards whenever it's past a newline.
                 let cursorPos = 0;
                 if (selection.rangeCount > 0) {
                     const range = selection.getRangeAt(0);
-                    const preCaretRange = range.cloneRange();
-                    preCaretRange.selectNodeContents(editor);
-                    preCaretRange.setEnd(range.endContainer, range.endOffset);
-                    cursorPos = preCaretRange.toString().length;
+                    const endContainer = range.endContainer;
+                    const endOffset = range.endOffset;
+
+                    function countUpTo(node) {
+                        if (node === endContainer) {
+                            if (node.nodeType === Node.TEXT_NODE) {
+                                cursorPos += endOffset;
+                            } else {
+                                // endContainer is an element; count children up to endOffset
+                                for (let i = 0; i < endOffset; i++) {
+                                    const child = node.childNodes[i];
+                                    if (child) cursorPos += countNode(child);
+                                }
+                            }
+                            return true; // found
+                        }
+                        if (node.nodeType === Node.TEXT_NODE) {
+                            cursorPos += node.textContent.length;
+                        } else if (node.nodeName === 'BR') {
+                            cursorPos += 1;
+                        } else {
+                            // Block elements (Chrome creates <div> for Enter in contenteditable)
+                            // contribute a \n to innerText when they follow other content,
+                            // just like <br> does.
+                            if (node.nodeType === Node.ELEMENT_NODE &&
+                                    /^(DIV|P|H[1-6]|LI|BLOCKQUOTE|PRE)$/.test(node.nodeName) &&
+                                    node.previousSibling !== null) {
+                                cursorPos += 1;
+                            }
+                            for (let i = 0; i < node.childNodes.length; i++) {
+                                if (countUpTo(node.childNodes[i])) return true;
+                            }
+                        }
+                        return false;
+                    }
+
+                    // Count total characters in a node (used when endContainer is an element)
+                    function countNode(node) {
+                        if (node.nodeType === Node.TEXT_NODE) return node.textContent.length;
+                        if (node.nodeName === 'BR') return 1;
+                        let total = 0;
+                        for (let i = 0; i < node.childNodes.length; i++) {
+                            total += countNode(node.childNodes[i]);
+                        }
+                        return total;
+                    }
+
+                    // Start from editor's children — never pass the editor div
+                    // itself, since it has a previousSibling in the outer DOM
+                    // that would wrongly trigger the block-element +1 check.
+                    for (let i = 0; i < editor.childNodes.length; i++) {
+                        if (countUpTo(editor.childNodes[i])) break;
+                    }
                 }
 
                 // Get plain text content
