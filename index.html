@@ -15,7 +15,7 @@
             --theme-bg: #1a1a2e;
             --theme-text: #eee;
             --theme-accent: #7c3aed;
-            --theme-danger: #f87171;
+            --theme-danger: color-mix(in srgb, hsl(0, 80%, 45%) 75%, var(--theme-text) 25%);
             --theme-border-radius: 12px;
             --theme-padding: 16px;
             --theme-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
@@ -324,9 +324,14 @@
 
         .entry-preview {
             color: var(--theme-text);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+        }
+
+        .entry-preview > * {
+            margin: 0 0 4px 0;
+        }
+
+        .entry-preview > *:last-child {
+            margin-bottom: 0;
         }
 
         .entry-answers {
@@ -496,6 +501,10 @@
            ============================================= */
         .markdown-content {
             line-height: 1.6;
+            border: 1px solid var(--theme-accent);
+            border-radius: var(--theme-border-radius);
+            padding: 16px;
+            margin-top: 8px;
         }
 
         .markdown-content h1,
@@ -2454,6 +2463,7 @@
             } else if (view === 'entry') {
                 document.getElementById('entry-view').classList.remove('hidden');
             } else if (view === 'history') {
+                document.getElementById('detail-view').querySelector('.section').style.cssText = '';
                 document.getElementById('history-view').classList.remove('hidden');
                 renderHistory();
             } else if (view === 'detail') {
@@ -2481,7 +2491,15 @@
             container.innerHTML = entries.map(entry => {
                 const date = new Date(entry.timestamp);
                 const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
-                const preview = entry.journal ? entry.journal.substring(0, 100) + (entry.journal.length > 100 ? '...' : '') : '(No journal text)';
+                const previewLines = entry.journal ? entry.journal.split('\n').slice(0, 3).join('\n') : null;
+                const preview = previewLines
+                    ? (typeof marked !== 'undefined' ? sanitizeHtml(marked.parse(
+                        previewLines
+                            .replace(/(?<!\*)\*(?!\*)([^*\n]+?)(?<!\*)\*(?!\*)/g, '**$1**')
+                            .replace(/_([^_\n]+?)_/g, '*$1*')
+                            .replace(/~([^~\n]+?)~/g, '~~$1~~')
+                      )) : escapeHtml(previewLines))
+                    : '(No journal text)';
                 const name = entry.answers.name || 'Unknown';
 
                 let themeStyle = 'cursor: pointer;';
@@ -2493,7 +2511,7 @@
                     <div class="entry-item" onclick="showEntryDetail(${entry.id})" style="${themeStyle}">
                         <div class="entry-date">${escapeHtml(dateStr)}</div>
                         <div class="entry-answers">Name: ${escapeHtml(name)}</div>
-                        <div class="entry-preview">${escapeHtml(preview)}</div>
+                        <div class="entry-preview">${preview}</div>
                     </div>
                 `;
             }).join('');
@@ -2505,9 +2523,11 @@
 
             if (!entry) return;
 
-            // Apply entry's theme if it has one
+            const detailSection = document.querySelector('#detail-view .section');
             if (entry.theme) {
-                applyTheme(entry.theme);
+                detailSection.style.cssText = `--theme-bg: ${entry.theme.bgColor}; --theme-text: ${entry.theme.textColor}; --theme-accent: ${entry.theme.accentColor}; --theme-border-radius: ${entry.theme.borderRadius}; --theme-padding: ${entry.theme.padding}; font-family: ${entry.theme.font};`;
+            } else {
+                detailSection.style.cssText = '';
             }
 
             const date = new Date(entry.timestamp);
