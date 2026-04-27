@@ -151,8 +151,7 @@
         input[type="text"],
         input[type="number"],
         select,
-        textarea,
-        .markdown-editor {
+        textarea {
             width: 100%;
             padding: 12px;
             border: 2px solid var(--theme-accent);
@@ -165,68 +164,17 @@
         input[type="text"]:focus,
         input[type="number"]:focus,
         select:focus,
-        textarea:focus,
-        .markdown-editor:focus {
+        textarea:focus {
             outline: none;
         }
 
-        /* Textarea & Markdown Editor - larger padding and height */
-        textarea,
-        .markdown-editor {
+        /* Textarea - larger padding and height */
+        textarea {
             min-height: 200px;
             padding: 16px;
             line-height: 1.6;
-        }
-
-        textarea {
             resize: vertical;
         }
-
-        .markdown-editor {
-            overflow-y: auto;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-        }
-
-        .markdown-editor:empty:before {
-            content: attr(data-placeholder);
-            color: var(--theme-text);
-            opacity: 0.5;
-        }
-
-        /* Markdown syntax styling */
-        .md-syntax {
-            color: var(--theme-text);
-            opacity: 0.4;
-        }
-
-        .md-bold {
-            font-weight: 600;
-            color: var(--theme-text);
-        }
-
-        .md-italic {
-            font-style: italic;
-            color: var(--theme-text);
-        }
-
-        .md-code {
-            background: var(--theme-bg);
-            padding: 2px 4px;
-            border-radius: var(--theme-border-radius);
-            font-family: 'Courier New', monospace;
-            font-size: 0.9em;
-            border: 1px solid var(--theme-accent);
-        }
-
-        .md-heading {
-            font-weight: 600;
-            color: var(--theme-accent);
-        }
-
-        .md-heading.h1 { font-size: 1.5em; }
-        .md-heading.h2 { font-size: 1.3em; }
-        .md-heading.h3 { font-size: 1.1em; }
 
         /* CodeMirror 6 editor */
         #journal-editor .cm-editor {
@@ -257,7 +205,8 @@
         /* Markdown decoration styles */
         #journal-editor .cm-md-bold   { font-weight: bold; }
         #journal-editor .cm-md-italic { font-style: italic; }
-        #journal-editor .cm-md-strike { text-decoration: line-through; }
+        #journal-editor .cm-md-strike    { text-decoration: line-through; }
+        #journal-editor .cm-md-underline  { text-decoration: underline; }
         #journal-editor .cm-md-dim    { opacity: 0.4; }
         #journal-editor .cm-md-h1     { font-weight: bold; font-size: 1.5em; color: var(--theme-accent); }
         #journal-editor .cm-md-h2     { font-weight: bold; font-size: 1.3em; color: var(--theme-accent); }
@@ -1191,8 +1140,7 @@
             }
 
             /* Smaller textarea on mobile */
-            textarea,
-            .markdown-editor {
+            textarea {
                 min-height: 150px;
             }
 
@@ -1249,8 +1197,7 @@
         button:focus-visible,
         input:focus-visible,
         select:focus-visible,
-        textarea:focus-visible,
-        .markdown-editor:focus-visible {
+        textarea:focus-visible {
             outline: 2px solid var(--theme-accent);
             outline-offset: 2px;
         }
@@ -1512,8 +1459,6 @@
 
         // Timing constants
         const SKIP_CONFIRMS_DURATION_MS = 5 * 60 * 1000; // 5 minutes
-        const MARKDOWN_DEBOUNCE_MS = 150; // Debounce delay for markdown rendering
-
         // Default questions
         const defaultQuestions = [
             {
@@ -1583,8 +1528,6 @@
         let skipConfirmsUntil = 0;
         let pendingConfirmAction = null;
 
-        // Markdown editor state
-        let markdownDebounceTimer = null;
 
         /* =============================================
            Security Utilities
@@ -2475,189 +2418,6 @@
             }
         }
 
-        function getPlainTextFromEditor(editor) {
-            // Extract plain text with markdown from the contenteditable div
-            return editor.innerText || '';
-        }
-
-        function handlePaste(event) {
-            event.preventDefault();
-            const text = event.clipboardData.getData('text/plain');
-            const selection = window.getSelection();
-            if (selection.rangeCount > 0) {
-                const range = selection.getRangeAt(0);
-                range.deleteContents();
-                range.insertNode(document.createTextNode(text));
-                range.collapse(false);
-                selection.removeAllRanges();
-                selection.addRange(range);
-            }
-        }
-
-        function handleMarkdownInput() {
-            // Debounce the expensive rendering operation
-            if (markdownDebounceTimer) {
-                clearTimeout(markdownDebounceTimer);
-            }
-
-            markdownDebounceTimer = setTimeout(() => {
-                const editor = document.getElementById('journal-text');
-                const selection = window.getSelection();
-
-                // Save cursor position by walking the DOM, counting
-                // text characters and <br> elements consistently with
-                // restoreCursor (which also counts each <br> as 1).
-                // We can't use preCaretRange.toString().length because
-                // toString() silently drops <br> elements, causing the
-                // cursor to jump backwards whenever it's past a newline.
-                let cursorPos = 0;
-                if (selection.rangeCount > 0) {
-                    const range = selection.getRangeAt(0);
-                    const endContainer = range.endContainer;
-                    const endOffset = range.endOffset;
-
-                    function countUpTo(node) {
-                        if (node === endContainer) {
-                            if (node.nodeType === Node.TEXT_NODE) {
-                                cursorPos += endOffset;
-                            } else {
-                                // endContainer is an element; count children up to endOffset
-                                for (let i = 0; i < endOffset; i++) {
-                                    const child = node.childNodes[i];
-                                    if (child) cursorPos += countNode(child);
-                                }
-                            }
-                            return true; // found
-                        }
-                        if (node.nodeType === Node.TEXT_NODE) {
-                            cursorPos += node.textContent.length;
-                        } else if (node.nodeName === 'BR') {
-                            cursorPos += 1;
-                        } else {
-                            // Block elements (Chrome creates <div> for Enter in contenteditable)
-                            // contribute a \n to innerText when they follow other content,
-                            // just like <br> does.
-                            if (node.nodeType === Node.ELEMENT_NODE &&
-                                    /^(DIV|P|H[1-6]|LI|BLOCKQUOTE|PRE)$/.test(node.nodeName) &&
-                                    node.previousSibling !== null) {
-                                cursorPos += 1;
-                            }
-                            for (let i = 0; i < node.childNodes.length; i++) {
-                                if (countUpTo(node.childNodes[i])) return true;
-                            }
-                        }
-                        return false;
-                    }
-
-                    // Count total characters in a node (used when endContainer is an element)
-                    function countNode(node) {
-                        if (node.nodeType === Node.TEXT_NODE) return node.textContent.length;
-                        if (node.nodeName === 'BR') return 1;
-                        let total = 0;
-                        for (let i = 0; i < node.childNodes.length; i++) {
-                            total += countNode(node.childNodes[i]);
-                        }
-                        return total;
-                    }
-
-                    // Start from editor's children — never pass the editor div
-                    // itself, since it has a previousSibling in the outer DOM
-                    // that would wrongly trigger the block-element +1 check.
-                    for (let i = 0; i < editor.childNodes.length; i++) {
-                        if (countUpTo(editor.childNodes[i])) break;
-                    }
-                }
-
-                // Get plain text content
-                const text = editor.innerText || '';
-
-                // Render markdown with styled syntax
-                const html = renderMarkdownWithSyntax(text);
-                editor.innerHTML = html;
-
-                // Restore cursor position
-                restoreCursor(editor, cursorPos);
-            }, MARKDOWN_DEBOUNCE_MS);
-        }
-
-        function renderMarkdownWithSyntax(text) {
-            if (!text) return '';
-
-            let html = text;
-
-            // Escape HTML
-            html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-            // Bold: **text** or __text__
-            html = html.replace(/(\*\*|__)((?:(?!\1).)+)\1/g,
-                '<span class="md-syntax">$1</span><span class="md-bold">$2</span><span class="md-syntax">$1</span>');
-
-            // Italic: *text* or _text_ (but not ** or __)
-            html = html.replace(/(?<!\*)\*(?!\*)([^*]+)\*(?!\*)/g,
-                '<span class="md-syntax">*</span><span class="md-italic">$1</span><span class="md-syntax">*</span>');
-            html = html.replace(/(?<!_)_(?!_)([^_]+)_(?!_)/g,
-                '<span class="md-syntax">_</span><span class="md-italic">$1</span><span class="md-syntax">_</span>');
-
-            // Inline code: `text`
-            html = html.replace(/`([^`]+)`/g,
-                '<span class="md-syntax">`</span><span class="md-code">$1</span><span class="md-syntax">`</span>');
-
-            // Headings at start of line
-            html = html.replace(/^(#{1,3})\s+(.+)$/gm,
-                (match, hashes, content) => {
-                    const level = hashes.length;
-                    return `<span class="md-syntax">${hashes} </span><span class="md-heading h${level}">${content}</span>`;
-                });
-
-            // Convert newlines to <br> tags
-            html = html.replace(/\n/g, '<br>');
-
-            return html;
-        }
-
-        function restoreCursor(element, position) {
-            const selection = window.getSelection();
-            const range = document.createRange();
-
-            let currentPos = 0;
-            let found = false;
-
-            function searchNode(node) {
-                if (found) return;
-
-                if (node.nodeType === Node.TEXT_NODE) {
-                    const nodeLength = node.textContent.length;
-                    if (currentPos + nodeLength >= position) {
-                        range.setStart(node, position - currentPos);
-                        range.collapse(true);
-                        found = true;
-                        return;
-                    }
-                    currentPos += nodeLength;
-                } else if (node.nodeName === 'BR') {
-                    currentPos += 1;
-                    if (currentPos >= position) {
-                        range.setStartAfter(node);
-                        range.collapse(true);
-                        found = true;
-                        return;
-                    }
-                } else {
-                    for (let i = 0; i < node.childNodes.length; i++) {
-                        searchNode(node.childNodes[i]);
-                        if (found) return;
-                    }
-                }
-            }
-
-            searchNode(element);
-
-            if (found) {
-                selection.removeAllRanges();
-                selection.addRange(range);
-            }
-        }
-
         /* =============================================
            Navigation & Views
            ============================================= */
@@ -3193,10 +2953,11 @@
         import { markdown } from 'https://esm.sh/@codemirror/lang-markdown@6';
         import { syntaxTree } from 'https://esm.sh/@codemirror/language@6';
 
-        const boldDeco   = Decoration.mark({ class: 'cm-md-bold' });
-        const italicDeco = Decoration.mark({ class: 'cm-md-italic' });
-        const strikeDeco = Decoration.mark({ class: 'cm-md-strike' });
-        const dimDeco    = Decoration.mark({ class: 'cm-md-dim' });
+        const boldDeco      = Decoration.mark({ class: 'cm-md-bold' });
+        const italicDeco    = Decoration.mark({ class: 'cm-md-italic' });
+        const strikeDeco    = Decoration.mark({ class: 'cm-md-strike' });
+        const underlineDeco = Decoration.mark({ class: 'cm-md-underline' });
+        const dimDeco       = Decoration.mark({ class: 'cm-md-dim' });
         const h1Deco     = Decoration.mark({ class: 'cm-md-h1' });
         const h2Deco     = Decoration.mark({ class: 'cm-md-h2' });
         const h3Deco     = Decoration.mark({ class: 'cm-md-h3' });
@@ -3231,10 +2992,20 @@
                 }
             });
 
-            // Single-tilde strikethrough (~text~) — not in the standard parser
-            const singleTildeRe = /(?<!~)~([^~\n]+?)~(?!~)/g;
+            // Regex scans for syntax the markdown parser doesn't handle
             const text = doc.toString();
             let m;
+
+            // Double-plus underline (++text++)
+            const underlineRe = /\+\+([^+\n]+?)\+\+/g;
+            while ((m = underlineRe.exec(text)) !== null) {
+                ranges.push({ from: m.index, to: m.index + m[0].length, deco: underlineDeco });
+                ranges.push({ from: m.index, to: m.index + 2, deco: dimDeco });
+                ranges.push({ from: m.index + m[0].length - 2, to: m.index + m[0].length, deco: dimDeco });
+            }
+
+            // Single-tilde strikethrough (~text~)
+            const singleTildeRe = /(?<!~)~([^~\n]+?)~(?!~)/g;
             while ((m = singleTildeRe.exec(text)) !== null) {
                 ranges.push({ from: m.index, to: m.index + m[0].length, deco: strikeDeco });
                 ranges.push({ from: m.index, to: m.index + 1, deco: dimDeco });
