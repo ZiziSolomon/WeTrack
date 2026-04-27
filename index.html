@@ -312,7 +312,7 @@
             padding: 16px;
             border-radius: var(--theme-border-radius);
             margin-bottom: 12px;
-            border-left: 4px solid var(--theme-accent);
+            border: 2px solid var(--theme-accent);
         }
 
         .entry-date {
@@ -2484,8 +2484,13 @@
                 const preview = entry.journal ? entry.journal.substring(0, 100) + (entry.journal.length > 100 ? '...' : '') : '(No journal text)';
                 const name = entry.answers.name || 'Unknown';
 
+                let themeStyle = 'cursor: pointer;';
+                if (entry.theme) {
+                    themeStyle += ` --theme-bg: ${entry.theme.bgColor}; --theme-text: ${entry.theme.textColor}; --theme-accent: ${entry.theme.accentColor}; --theme-border-radius: ${entry.theme.borderRadius};`;
+                }
+
                 return `
-                    <div class="entry-item" onclick="showEntryDetail(${entry.id})" style="cursor: pointer;">
+                    <div class="entry-item" onclick="showEntryDetail(${entry.id})" style="${themeStyle}">
                         <div class="entry-date">${escapeHtml(dateStr)}</div>
                         <div class="entry-answers">Name: ${escapeHtml(name)}</div>
                         <div class="entry-preview">${escapeHtml(preview)}</div>
