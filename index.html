@@ -228,6 +228,42 @@
         .md-heading.h2 { font-size: 1.3em; }
         .md-heading.h3 { font-size: 1.1em; }
 
+        /* CodeMirror 6 editor */
+        #journal-editor .cm-editor {
+            border: 2px solid var(--theme-accent);
+            background: var(--theme-bg);
+            color: var(--theme-text);
+            border-radius: var(--theme-border-radius);
+            min-height: 200px;
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        #journal-editor .cm-editor.cm-focused {
+            outline: none;
+        }
+
+        #journal-editor .cm-content {
+            padding: 16px;
+            min-height: 200px;
+            font-family: var(--theme-font);
+            caret-color: var(--theme-text);
+        }
+
+        #journal-editor .cm-scroller {
+            overflow: auto;
+        }
+
+        /* Markdown decoration styles */
+        #journal-editor .cm-md-bold   { font-weight: bold; }
+        #journal-editor .cm-md-italic { font-style: italic; }
+        #journal-editor .cm-md-strike { text-decoration: line-through; }
+        #journal-editor .cm-md-dim    { opacity: 0.4; }
+        #journal-editor .cm-md-h1     { font-weight: bold; font-size: 1.5em; }
+        #journal-editor .cm-md-h2     { font-weight: bold; font-size: 1.3em; }
+        #journal-editor .cm-md-h3     { font-weight: bold; font-size: 1.1em; }
+        #journal-editor .cm-md-code   { font-family: monospace; font-size: 0.9em; background-color: color-mix(in srgb, var(--theme-accent) 40%, transparent); border-radius: 3px; }
+
         /* =============================================
            Buttons
            ============================================= */
@@ -316,6 +352,7 @@
             padding: 16px;
             border-radius: var(--theme-border-radius);
             text-align: center;
+            margin-top: 16px;
             margin-bottom: 20px;
         }
 
@@ -1311,12 +1348,7 @@
         <div id="journal-step" class="hidden">
             <div class="section">
                 <h2 style="margin-bottom: 16px;">Journal Entry</h2>
-                <div id="journal-text"
-                     class="markdown-editor"
-                     contenteditable="true"
-                     data-placeholder="Write your thoughts here... (Markdown supported)"
-                     oninput="handleMarkdownInput()"
-                     onpaste="handlePaste(event)"></div>
+                <div id="journal-editor"></div>
             </div>
             <div class="button-row">
                 <button class="btn-secondary" onclick="backToQuestions()">← Back to Questions</button>
@@ -2414,8 +2446,7 @@
         }
 
         function saveEntry() {
-            const editor = document.getElementById('journal-text');
-            const journalText = getPlainTextFromEditor(editor);
+            const journalText = window.cmView ? window.cmView.state.doc.toString() : '';
 
             const entry = {
                 id: Date.now(),
@@ -2437,7 +2468,11 @@
             }, 2000);
 
             renderQuestions();
-            editor.innerHTML = '';
+            if (window.cmView) {
+                window.cmView.dispatch({
+                    changes: { from: 0, to: window.cmView.state.doc.length, insert: '' }
+                });
+            }
         }
 
         function getPlainTextFromEditor(editor) {
@@ -2634,6 +2669,7 @@
         function goToJournal() {
             document.getElementById('questions-step').classList.add('hidden');
             document.getElementById('journal-step').classList.remove('hidden');
+            if (window.initCMEditor) window.initCMEditor();
         }
 
         function backToQuestions() {
@@ -3150,5 +3186,92 @@
             <button id="cp-done" onclick="closeColorPicker()">Done</button>
         </div>
     </div>
+    <script type="module">
+        import { EditorView, Decoration, ViewPlugin, keymap } from 'https://esm.sh/@codemirror/view@6';
+        import { RangeSetBuilder } from 'https://esm.sh/@codemirror/state@6';
+        import { history, defaultKeymap, historyKeymap } from 'https://esm.sh/@codemirror/commands@6';
+        import { markdown } from 'https://esm.sh/@codemirror/lang-markdown@6';
+        import { syntaxTree } from 'https://esm.sh/@codemirror/language@6';
+
+        const boldDeco   = Decoration.mark({ class: 'cm-md-bold' });
+        const italicDeco = Decoration.mark({ class: 'cm-md-italic' });
+        const strikeDeco = Decoration.mark({ class: 'cm-md-strike' });
+        const dimDeco    = Decoration.mark({ class: 'cm-md-dim' });
+        const h1Deco     = Decoration.mark({ class: 'cm-md-h1' });
+        const h2Deco     = Decoration.mark({ class: 'cm-md-h2' });
+        const h3Deco     = Decoration.mark({ class: 'cm-md-h3' });
+        const codeDeco   = Decoration.mark({ class: 'cm-md-code' });
+
+        function buildDecos(view) {
+            const ranges = [];
+            const tree = syntaxTree(view.state);
+            const doc = view.state.doc;
+
+            tree.iterate({
+                enter(node) {
+                    let deco = null;
+                    switch (node.name) {
+                        case 'Emphasis': {
+                            const delim = doc.sliceString(node.from, node.from + 1);
+                            deco = delim === '_' ? italicDeco : boldDeco;
+                            break;
+                        }
+                        case 'StrongEmphasis':    deco = boldDeco;   break;
+                        case 'Strikethrough':     deco = strikeDeco; break;
+                        case 'ATXHeading1':       deco = h1Deco;     break;
+                        case 'ATXHeading2':       deco = h2Deco;     break;
+                        case 'ATXHeading3':       deco = h3Deco;     break;
+                        case 'InlineCode':        deco = codeDeco;   break;
+                        case 'EmphasisMark':
+                        case 'HeaderMark':
+                        case 'CodeMark':
+                        case 'StrikethroughMark': deco = dimDeco;    break;
+                    }
+                    if (deco) ranges.push({ from: node.from, to: node.to, deco });
+                }
+            });
+
+            // Single-tilde strikethrough (~text~) — not in the standard parser
+            const singleTildeRe = /(?<!~)~([^~\n]+?)~(?!~)/g;
+            const text = doc.toString();
+            let m;
+            while ((m = singleTildeRe.exec(text)) !== null) {
+                ranges.push({ from: m.index, to: m.index + m[0].length, deco: strikeDeco });
+                ranges.push({ from: m.index, to: m.index + 1, deco: dimDeco });
+                ranges.push({ from: m.index + m[0].length - 1, to: m.index + m[0].length, deco: dimDeco });
+            }
+
+            ranges.sort((a, b) => a.from !== b.from ? a.from - b.from : a.to - b.to);
+
+            const builder = new RangeSetBuilder();
+            for (const { from, to, deco } of ranges) {
+                builder.add(from, to, deco);
+            }
+            return builder.finish();
+        }
+
+        const markdownDecos = ViewPlugin.fromClass(class {
+            constructor(view) { this.decorations = buildDecos(view); }
+            update(update) {
+                if (update.docChanged || update.viewportChanged)
+                    this.decorations = buildDecos(update.view);
+            }
+        }, { decorations: v => v.decorations });
+
+        window.initCMEditor = function() {
+            if (window.cmView) return;
+            window.cmView = new EditorView({
+                doc: '',
+                extensions: [
+                    history(),
+                    keymap.of([...defaultKeymap, ...historyKeymap]),
+                    markdown(),
+                    markdownDecos,
+                    EditorView.lineWrapping,
+                ],
+                parent: document.getElementById('journal-editor')
+            });
+        };
+    </script>
 </body>
 </html>
